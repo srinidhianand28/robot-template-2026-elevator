@@ -11,6 +11,8 @@ public abstract class SubsystemIF extends SubsystemBase {
         this.logger = LoggerFactory.getLogger(this.getClass());
     }
 
+    // Initialization
+
     public SubsystemIF initialize() {
         return this;
     }
@@ -20,6 +22,10 @@ public abstract class SubsystemIF extends SubsystemBase {
     public void onAutonomousInit() {}
 
     public void onTeleopInit() {}
+
+    public void onSimulationInit() {}
+
+    // Energy
 
     public double getEnergyUsed() {
         return 0;

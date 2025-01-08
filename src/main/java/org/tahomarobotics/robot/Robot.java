@@ -83,5 +83,10 @@ public class Robot extends TimedRobot {
     // Simulation
 
     @Override
+    public void simulationInit() {
+        subsystems.forEach(SubsystemIF::onSimulationInit);
+    }
+
+    @Override
     public void simulationPeriodic() {}
 }
