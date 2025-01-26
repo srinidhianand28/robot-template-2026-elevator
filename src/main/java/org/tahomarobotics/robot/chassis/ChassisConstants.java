@@ -7,16 +7,20 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
 import org.tahomarobotics.robot.RobotConfiguration;
+import org.tahomarobotics.robot.RobotMap;
+
+import java.util.Objects;
 
 @SuppressWarnings("SuspiciousNameCombination")
 public class ChassisConstants {
     // Physical
 
     /** Width-wise distance between wheel centers in <strong>meters</strong> */
-    private static final double TRACK_WIDTH = 0.5816;
+    private static final double TRACK_WIDTH = Units.inchesToMeters(20.75);
     /** Length-wise distance between wheel centers in <strong>meters</strong> */
-    private static final double WHEELBASE = 0.5816;
+    private static final double WHEELBASE = Units.inchesToMeters(20.75);
 
     private static final double HALF_TRACK_WIDTH = TRACK_WIDTH / 2;
     private static final double HALF_WHEELBASE = WHEELBASE / 2;
@@ -25,7 +29,7 @@ public class ChassisConstants {
     public static final double MASS = 52.1631;
 
     /** Approximate radius of the wheel in <strong>meters</strong> */
-    private static final double WHEEL_RADIUS = 0.0508;
+    private static final double WHEEL_RADIUS = Units.inchesToMeters(3.95 / 2 - 0.1 /* Tread compression */);
     /** Approximate circumference of the wheel in <strong>meters</strong> */
     private static final double WHEEL_CIRCUMFERENCE = 2 * Math.PI * WHEEL_RADIUS;
     /** Approximate Moment of Inertia based on CAD in <strong>kilogram meter squared</strong>. */
@@ -40,9 +44,7 @@ public class ChassisConstants {
     // Gearing
 
     /** Reduction between the drive motor and the wheel. */
-    public static final double DRIVE_REDUCTION = (14.0 / 50.0) * (27.0 / 17.0) * (15.0 / 45.0);
-    /** Reduction between the steer motor and the wheel. */
-    public static final double STEER_REDUCTION = (14.0 / 50.0) * (10.0 / 60.0);
+    public static final double DRIVE_REDUCTION = Gearing.L1_PLUS.driveReduction;
     /** Ratio between angular position and position in <strong>meters</strong> for the wheel. */
     public static final double DRIVE_POSITION_COEFFICIENT = WHEEL_CIRCUMFERENCE * DRIVE_REDUCTION;
 
@@ -83,59 +85,100 @@ public class ChassisConstants {
 
     // Configuration
 
-    public static final TalonFXConfiguration driveMotorConfiguration = new TalonFXConfiguration()
-        .withSlot0(new Slot0Configs()
-                       .withKP(0.15)
-                       .withKV(kV_DRIVE))
-        .withMotorOutput(new MotorOutputConfigs()
-                             .withNeutralMode(NeutralModeValue.Brake)
-                             .withInverted(InvertedValue.Clockwise_Positive))
-        .withMotionMagic(new MotionMagicConfigs()
-                             .withMotionMagicAcceleration(120)
-                             .withMotionMagicJerk(360)
-        )
-        .withCurrentLimits(new CurrentLimitsConfigs()
-                               .withStatorCurrentLimit(DRIVE_STATOR_CURRENT_LIMIT)
-                               .withSupplyCurrentLimit(DRIVE_SUPPLY_CURRENT_LIMIT))
-        .withAudio(new AudioConfigs()
-                       .withBeepOnBoot(true)
-                       .withBeepOnConfig(true));
+    /** @return The configuration for the drive motor. */
+    public static TalonFXConfiguration createDriveMotorConfiguration() {
+        return new TalonFXConfiguration()
+            .withSlot0(
+                new Slot0Configs()
+                    .withKP(0.15)
+                    .withKV(kV_DRIVE)
+            ).withMotorOutput(
+                new MotorOutputConfigs()
+                    .withNeutralMode(NeutralModeValue.Brake)
+                    .withInverted(InvertedValue.Clockwise_Positive)
+            ).withCurrentLimits(
+                new CurrentLimitsConfigs()
+                    .withStatorCurrentLimit(DRIVE_STATOR_CURRENT_LIMIT)
+                    .withSupplyCurrentLimit(DRIVE_SUPPLY_CURRENT_LIMIT)
+            ).withAudio(
+                new AudioConfigs()
+                    .withBeepOnBoot(true)
+                    .withBeepOnConfig(true)
+                    .withAllowMusicDurDisable(true)
+            );
+    }
 
-    public static final TalonFXConfiguration steerMotorConfiguration = new TalonFXConfiguration()
-        .withSlot0(new Slot0Configs()
-                       .withKP(8.0)
-                       .withKI(0.01)
-                       .withKD(0.16)
-        )
-        .withMotorOutput(new MotorOutputConfigs()
-                             .withNeutralMode(NeutralModeValue.Brake)
-                             .withInverted(InvertedValue.Clockwise_Positive))
-        .withMotionMagic(new MotionMagicConfigs()
-                             .withMotionMagicAcceleration(25)
-                             .withMotionMagicJerk(100)
-        )
-        .withClosedLoopGeneral(new ClosedLoopGeneralConfigs() {{
-            ContinuousWrap = true;
-        }})
-        .withFeedback(new FeedbackConfigs() {{
-                          if (RobotConfiguration.CANIVORE_PHOENIX_PRO) {
-                              FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
-                              RotorToSensorRatio = 1 / STEER_REDUCTION;
-                          } else {
-                              FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
-                          }
-                      }}
-        )
-        .withCurrentLimits(new CurrentLimitsConfigs()
-                               .withStatorCurrentLimit(STEER_STATOR_CURRENT_LIMIT)
-                               .withSupplyCurrentLimit(STEER_SUPPLY_CURRENT_LIMIT))
-        .withAudio(new AudioConfigs()
-                       .withBeepOnBoot(true)
-                       .withBeepOnConfig(true));
+    /** @return The configuration for the steer motor. */
+    public static TalonFXConfiguration createSteerMotorConfiguration(String moduleName, int encoderId) {
+        // TODO: This sucks, but is the easiest way to do this right now.
+        double steerReduction = Objects.equals(
+            RobotMap.BACK_LEFT_MOD.moduleName(), moduleName) ? Type.MK4n.steerReduction : Type.MK4i.steerReduction;
 
-    public static final CANcoderConfiguration encoderConfiguration = new CANcoderConfiguration()
-        .withMagnetSensor(new MagnetSensorConfigs()
-                              .withAbsoluteSensorDiscontinuityPoint(1)
-                              .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive)
-        );
+        return new TalonFXConfiguration()
+            .withSlot0(
+                new Slot0Configs()
+                    .withKP(8.0)
+                    .withKI(0.01)
+                    .withKD(0.16)
+            ).withMotorOutput(
+                new MotorOutputConfigs()
+                    .withNeutralMode(NeutralModeValue.Brake)
+                    .withInverted(InvertedValue.Clockwise_Positive)
+            ).withClosedLoopGeneral(new ClosedLoopGeneralConfigs() {{
+                ContinuousWrap = true;
+            }}).withFeedback(
+                new FeedbackConfigs() {{
+                    FeedbackRemoteSensorID = encoderId;
+
+                    if (RobotConfiguration.CANIVORE_PHOENIX_PRO) {
+                        FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+                        RotorToSensorRatio = 1 / steerReduction;
+                    } else {
+                        FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+                    }
+                }}
+            ).withCurrentLimits(
+                new CurrentLimitsConfigs()
+                    .withStatorCurrentLimit(STEER_STATOR_CURRENT_LIMIT)
+                    .withSupplyCurrentLimit(STEER_SUPPLY_CURRENT_LIMIT)
+            ).withAudio(
+                new AudioConfigs()
+                    .withBeepOnBoot(true)
+                    .withBeepOnConfig(true)
+                    .withAllowMusicDurDisable(true)
+            );
+    }
+
+    public static CANcoderConfiguration createEncoderConfiguration() {
+        return new CANcoderConfiguration()
+            .withMagnetSensor(
+                new MagnetSensorConfigs()
+                    .withAbsoluteSensorDiscontinuityPoint(1)
+                    .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive)
+            );
+    }
+
+    // Vendor
+
+    public enum Type {
+        MK4i((14.0 / 50.0) * (10.0 / 60.0)),
+        MK4n(1 / 18.75);
+
+        final double steerReduction;
+
+        Type(double steerReduction) {
+            this.steerReduction = steerReduction;
+        }
+    }
+
+    public enum Gearing {
+        L1_PLUS((16.0 / 50.0) * (25.0 / 19.0) * (15.0 / 45.0)),
+        L2_PLUS((16.0 / 50.0) * (27.0 / 17.0) * (15.0 / 45.0));
+
+        final double driveReduction;
+
+        Gearing(double driveReduction) {
+            this.driveReduction = driveReduction;
+        }
+    }
 }

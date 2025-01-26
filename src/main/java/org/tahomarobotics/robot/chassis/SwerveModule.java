@@ -31,6 +31,7 @@ import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.RobustConfigurator;
 
 import java.util.List;
+import java.util.Objects;
 
 import static edu.wpi.first.units.Units.Volts;
 import static org.tahomarobotics.robot.chassis.ChassisConstants.*;
@@ -72,6 +73,11 @@ public class SwerveModule {
     private final PositionDutyCycle steerMotorPosition = new PositionDutyCycle(0.0).withEnableFOC(
         RobotConfiguration.CANIVORE_PHOENIX_PRO);
 
+    // Temp
+
+    // TODO: This sucks, but is the easiest way to do this right now.
+    double steerReduction;
+
     // Initialization
 
     public SwerveModule(RobotMap.SwerveModuleDescriptor descriptor, double angularOffset) {
@@ -79,13 +85,18 @@ public class SwerveModule {
         translationOffset = descriptor.offset();
         this.angularOffset = angularOffset;
 
+        // TODO: This sucks, but is the easiest way to do this right now.
+        double steerReduction = Objects.equals(
+            RobotMap.BACK_LEFT_MOD.moduleName(), name) ? Type.MK4n.steerReduction : Type.MK4i.steerReduction;
+
         driveMotor = new TalonFX(descriptor.driveId(), RobotConfiguration.CANBUS_NAME);
         steerMotor = new TalonFX(descriptor.steerId(), RobotConfiguration.CANBUS_NAME);
         steerEncoder = new CANcoder(descriptor.encoderId(), RobotConfiguration.CANBUS_NAME);
 
-        RobustConfigurator.tryConfigureTalonFX(name + " Drive Motor", driveMotor, driveMotorConfiguration);
-        RobustConfigurator.tryConfigureTalonFX(name + " Steer Motor", steerMotor, steerMotorConfiguration);
-        RobustConfigurator.tryConfigureCANcoder(name + " Encoder", steerEncoder, encoderConfiguration);
+        RobustConfigurator.tryConfigureTalonFX(name + " Drive Motor", driveMotor, createDriveMotorConfiguration());
+        RobustConfigurator.tryConfigureTalonFX(
+            name + " Steer Motor", steerMotor, createSteerMotorConfiguration(descriptor.encoderId()));
+        RobustConfigurator.tryConfigureCANcoder(name + " Encoder", steerEncoder, createEncoderConfiguration());
 
         drivePosition = driveMotor.getPosition();
         driveRotorPosition = driveMotor.getRotorPosition();
@@ -222,7 +233,7 @@ public class SwerveModule {
             LinearSystemId.createDCMotorSystem(
                 DCMotor.getKrakenX60Foc(1),
                 WHEEL_MOI * MOI_SCALING_FACTOR,
-                1 / STEER_REDUCTION
+                1 / steerReduction
             ),
             DCMotor.getKrakenX60Foc(1)
         );
@@ -276,8 +287,8 @@ public class SwerveModule {
         driveMotorSimState.setRawRotorPosition(driveMotorSimModel.getAngularPositionRotations() / DRIVE_REDUCTION);
         driveMotorSimState.setRotorVelocity(driveMotorSimModel.getAngularVelocityRPM() / DRIVE_REDUCTION / 60);
 
-        steerMotorSimState.setRawRotorPosition(steerMotorSimModel.getAngularPositionRotations() / STEER_REDUCTION);
-        steerMotorSimState.setRotorVelocity(steerMotorSimModel.getAngularVelocityRPM() / STEER_REDUCTION / 60);
+        steerMotorSimState.setRawRotorPosition(steerMotorSimModel.getAngularPositionRotations() / steerReduction);
+        steerMotorSimState.setRotorVelocity(steerMotorSimModel.getAngularVelocityRPM() / steerReduction / 60);
 
         // Sync encoder with steer motor
         steerEncoderSimState.setRawPosition(steerMotorSimModel.getAngularPositionRotations());
