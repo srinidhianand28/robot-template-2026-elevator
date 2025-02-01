@@ -149,11 +149,12 @@ public class ChassisConstants {
             );
     }
 
-    public static CANcoderConfiguration createEncoderConfiguration() {
+    public static CANcoderConfiguration createEncoderConfiguration(double angularOffset) {
         return new CANcoderConfiguration()
             .withMagnetSensor(
                 new MagnetSensorConfigs()
                     .withAbsoluteSensorDiscontinuityPoint(1)
+                    .withMagnetOffset(angularOffset)
                     .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive)
             );
     }

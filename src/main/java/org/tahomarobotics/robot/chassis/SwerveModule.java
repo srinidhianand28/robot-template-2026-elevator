@@ -96,15 +96,16 @@ public class SwerveModule {
         RobustConfigurator.tryConfigureTalonFX(name + " Drive Motor", driveMotor, createDriveMotorConfiguration());
         RobustConfigurator.tryConfigureTalonFX(
             name + " Steer Motor", steerMotor, createSteerMotorConfiguration(name, descriptor.encoderId()));
-        RobustConfigurator.tryConfigureCANcoder(name + " Encoder", steerEncoder, createEncoderConfiguration());
+        RobustConfigurator.tryConfigureCANcoder(
+            name + " Encoder", steerEncoder, createEncoderConfiguration(angularOffset));
 
         drivePosition = driveMotor.getPosition();
         driveRotorPosition = driveMotor.getRotorPosition();
         driveVelocity = driveMotor.getVelocity();
         driveAcceleration = driveMotor.getAcceleration();
 
-        steerPosition = steerMotor.getPosition();
-        steerVelocity = steerMotor.getVelocity();
+        steerPosition = steerEncoder.getAbsolutePosition();
+        steerVelocity = steerEncoder.getVelocity();
 
         driveCurrent = driveMotor.getSupplyCurrent();
         steerCurrent = steerMotor.getSupplyCurrent();
@@ -119,7 +120,7 @@ public class SwerveModule {
             steerVelocity,
             driveCurrent,
             steerCurrent,
-            
+
             // Used for fusing the steer motor's position and velocity
             steerEncoder.getPosition(),
             steerEncoder.getVelocity()
