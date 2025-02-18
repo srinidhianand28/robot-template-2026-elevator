@@ -5,6 +5,8 @@ import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
+import org.tahomarobotics.robot.Main;
+import org.tahomarobotics.robot.util.identity.Identity;
 
 
 public class CollectorConstants {
@@ -71,7 +73,7 @@ public class CollectorConstants {
      * - Range of Motion: (~83, ~-21deg) from horizontal <p>
      */
     public enum TargetDeployState {
-        ZEROED(Units.degreesToRotations(83)),
+        ZEROED(Units.degreesToRotations(Main.robotID == Identity.BEEF ? 103.75 : 83.75)),
         STOW(Units.degreesToRotations(75)),
         CORAL_COLLECT(Units.degreesToRotations(-20.75)),
         ALGAE_COLLECT(Units.degreesToRotations(0)),
