@@ -14,6 +14,8 @@ public class WindmillConstants {
     // States
 
     public enum TrajectoryState {
+        HIGH_DESCORE(new Translation2d(-0.4, 0.90)),
+        LOW_DESCORE(new Translation2d(-0.4, 0.54)),
         COLLECT(new Translation2d(-0.025, -0.22)),
         STOW(new Translation2d(0, 0.7)),
         L4(new Translation2d(-0.332, 1.59)),

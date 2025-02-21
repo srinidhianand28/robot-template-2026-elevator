@@ -22,10 +22,10 @@ import org.tahomarobotics.robot.grabber.GrabberCommands;
 import org.tahomarobotics.robot.indexer.Indexer;
 import org.tahomarobotics.robot.indexer.IndexerCommands;
 import org.tahomarobotics.robot.util.SubsystemIF;
+import org.tahomarobotics.robot.util.game.GamePiece;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.WindmillConstants;
-import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
 
 import java.util.List;
 import java.util.function.Function;
@@ -143,8 +143,20 @@ public class OI extends SubsystemIF {
         );
 
         controller.y().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L4, WindmillConstants.TrajectoryState.COLLECT));
-        controller.b().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L3, WindmillConstants.TrajectoryState.COLLECT));
-        controller.a().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L2, WindmillConstants.TrajectoryState.COLLECT));
+        controller.b().onTrue(Commands.deferredProxy(() -> {
+            if (collector.getCollectionMode() == GamePiece.CORAL) {
+                return windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L3, WindmillConstants.TrajectoryState.COLLECT);
+            } else {
+                return windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.HIGH_DESCORE, WindmillConstants.TrajectoryState.COLLECT);
+            }
+        }));
+        controller.a().onTrue(Commands.deferredProxy(() -> {
+            if (collector.getCollectionMode() == GamePiece.CORAL) {
+                return windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L2, WindmillConstants.TrajectoryState.COLLECT);
+            } else {
+                return windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.LOW_DESCORE, WindmillConstants.TrajectoryState.COLLECT);
+            }
+        }));
         controller.x().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.COLLECT, WindmillConstants.TrajectoryState.STOW));
 
         SmartDashboard.putData(
