@@ -68,7 +68,7 @@ public class Robot extends TimedRobot {
         });
 
         Epilogue.bind(this);
-        DataLogManager.start();
+//        DataLogManager.start(); // TODO fix this
 
         WindmillTrajectories.initialize();
 
