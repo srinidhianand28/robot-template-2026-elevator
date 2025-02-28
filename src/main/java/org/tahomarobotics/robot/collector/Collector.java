@@ -44,7 +44,7 @@ public class Collector extends SubsystemIF {
 
     private final StatusSignal<Angle> leftDeployPosition, rightDeployPosition;
     private final StatusSignal<AngularVelocity> leftDeployVelocity, rightDeployVelocity, collectorVelocity;
-    private final StatusSignal<Current> collectorCurrent;
+    private final StatusSignal<Current> collectorCurrent, leftDeployCurrent, rightDeployCurrent;
 
     @Logged
     private final LoggedStatusSignal.List statusSignals;
@@ -95,8 +95,8 @@ public class Collector extends SubsystemIF {
 
         collectorVelocity = collectorMotor.getVelocity();
 
-        StatusSignal<Current> leftDeployCurrent = leftMotor.getSupplyCurrent();
-        StatusSignal<Current> rightDeployCurrent = rightMotor.getSupplyCurrent();
+        leftDeployCurrent = leftMotor.getSupplyCurrent();
+        rightDeployCurrent = rightMotor.getSupplyCurrent();
         collectorCurrent = collectorMotor.getSupplyCurrent();
 
         statusSignals = new LoggedStatusSignal.List(List.of(
@@ -147,6 +147,10 @@ public class Collector extends SubsystemIF {
 
     public TargetDeployState getTargetDeployState() {
         return targetDeployState;
+    }
+
+    public boolean isAtTargetDeployState() {
+        return Math.abs(targetDeployState.angle - leftDeployPosition.getValueAsDouble()) < DEPLOY_AT_POSITION_THRESHOLD && isDeployStopped();
     }
 
     private void setDeploymentControl(TargetDeployState state) {
@@ -281,8 +285,21 @@ public class Collector extends SubsystemIF {
         collectorCancelEjecting();
     }
 
-    // -- Subsystem Overrides --
+    // -- Getters --
+    
+    public double getCollectorCurrent() {
+        return collectorCurrent.getValueAsDouble();
+    }
 
+    public double getLeftDeployCurrent() {
+        return leftDeployCurrent.getValueAsDouble();
+    }
+
+    public double getRightDeployCurrent() {
+        return rightDeployCurrent.getValueAsDouble();
+    }
+
+    // -- Subsystem Overrides --
 
     @Override
     public SubsystemIF initialize() {

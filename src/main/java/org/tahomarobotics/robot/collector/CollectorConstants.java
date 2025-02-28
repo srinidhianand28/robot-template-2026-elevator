@@ -32,8 +32,9 @@ public class CollectorConstants {
     public static final double DEPLOY_ZERO_POSITION;
 
     public static final double DEPLOY_ZEROING_TIMEOUT = 5;
-
     public static final double DEPLOY_ZEROING_VOLTAGE = 1;
+
+    public static final double DEPLOY_AT_POSITION_THRESHOLD = 0.005;
     public static final double DEPLOY_MOVING_VELOCITY_THRESHOLD = 0.001;
 
     // States

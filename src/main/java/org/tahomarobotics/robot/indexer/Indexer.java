@@ -127,7 +127,7 @@ public class Indexer extends SubsystemIF {
     }
 
     @Logged
-    public double getSupplyCurrent() {
+    public double getCurrent() {
         return current.getValueAsDouble();
     }
 

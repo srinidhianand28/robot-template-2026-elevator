@@ -194,6 +194,8 @@ public class Chassis extends SubsystemIF {
         }
     }
 
+    public List<SwerveModule> getModules() { return modules; }
+
     public SwerveModulePosition[] getSwerveModulePositions() {
         return modules.stream().map(SwerveModule::getPosition).toArray(SwerveModulePosition[]::new);
     }

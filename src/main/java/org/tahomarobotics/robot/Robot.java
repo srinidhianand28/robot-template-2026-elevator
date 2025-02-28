@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.tahomarobotics.robot.auto.Autonomous;
 import org.tahomarobotics.robot.chassis.Chassis;
+import org.tahomarobotics.robot.check.SystemCheck;
 import org.tahomarobotics.robot.climber.Climber;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.grabber.Grabber;
@@ -70,6 +71,7 @@ public class Robot extends TimedRobot {
 //        DataLogManager.start(); // TODO fix this
 
         WindmillTrajectories.initialize();
+        SystemCheck.initialize();
 
 //        disableWatchdog(`this, IterativeRobotBase.class);
 //        disableWatchdog(CommandScheduler.getInstance(), CommandScheduler.class);

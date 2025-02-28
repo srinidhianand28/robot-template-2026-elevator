@@ -1,26 +1,21 @@
 package org.tahomarobotics.robot.climber;
 
 import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import edu.wpi.first.wpilibj.RobotState;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.climber.commands.ClimberCommands;
-import org.tahomarobotics.robot.collector.CollectorCommands;
-import org.tahomarobotics.robot.collector.CollectorConstants;
 import org.tahomarobotics.robot.util.RobustConfigurator;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
@@ -29,8 +24,9 @@ import org.tinylog.Logger;
 
 import java.util.List;
 
-import static edu.wpi.first.units.Units.*;
-import static org.tahomarobotics.robot.climber.ClimberConstants.*;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Volts;
+import static org.tahomarobotics.robot.climber.ClimberConstants.climberMotorConfig;
 
 @Logged(strategy = Logged.Strategy.OPT_IN)
 public class Climber extends SubsystemIF {
@@ -171,6 +167,16 @@ public class Climber extends SubsystemIF {
         climberFollower.setPosition(ClimberConstants.CLIMBER_ZERO_POSITION);
     }
 
+    // -- Getters --
+
+    public double getLeadCurrent() {
+        return climberMotorCurrent.getValueAsDouble();
+    }
+
+    public double getFollowerCurrent() {
+        return climberFollowerCurrent.getValueAsDouble();
+    }
+
     // -- Periodic --
 
     @Override
@@ -199,6 +205,7 @@ public class Climber extends SubsystemIF {
             Volts.of(0.25).per(Second),
             Volts.of(1),
             climberFollower,
-            true));
+            true
+        ));
     }
 }

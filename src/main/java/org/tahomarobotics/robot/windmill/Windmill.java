@@ -59,7 +59,7 @@ public class Windmill extends SubsystemIF {
 
     private final StatusSignal<Angle> elevatorPosition, armPosition;
     private final StatusSignal<AngularVelocity> elevatorVelocity, armVelocity;
-    private final StatusSignal<Current> elevatorCurrent, armCurrent;
+    private final StatusSignal<Current> elevatorLeftCurrent, elevatorRightCurrent, armCurrent;
 
     @Logged
     private final LoggedStatusSignal.List statusSignals;
@@ -106,7 +106,8 @@ public class Windmill extends SubsystemIF {
 
         elevatorPosition = elevatorLeftMotor.getPosition();
         elevatorVelocity = elevatorLeftMotor.getVelocity();
-        elevatorCurrent = elevatorLeftMotor.getSupplyCurrent();
+        elevatorLeftCurrent = elevatorLeftMotor.getSupplyCurrent();
+        elevatorRightCurrent = elevatorRightMotor.getSupplyCurrent();
 
         armPosition = armMotor.getPosition();
         armVelocity = armMotor.getVelocity();
@@ -115,7 +116,8 @@ public class Windmill extends SubsystemIF {
         statusSignals = new LoggedStatusSignal.List(List.of(
             new LoggedStatusSignal("Elevator Position", elevatorPosition),
             new LoggedStatusSignal("Elevator Velocity", elevatorVelocity),
-            new LoggedStatusSignal("Elevator Current", elevatorCurrent),
+            new LoggedStatusSignal("Elevator Left Current", elevatorLeftCurrent),
+            new LoggedStatusSignal("Elevator Right Current", elevatorRightCurrent),
             new LoggedStatusSignal("Arm Position", armPosition),
             new LoggedStatusSignal("Arm Velocity", armVelocity),
             new LoggedStatusSignal("Arm Current", armCurrent),
@@ -258,6 +260,14 @@ public class Windmill extends SubsystemIF {
         return getElevatorHeight() > ELEVATOR_LOW_STAGE_MAX;
     }
 
+    public double getElevatorLeftCurrent() {
+        return elevatorLeftCurrent.getValueAsDouble();
+    }
+
+    public double getElevatorRightCurrent() {
+        return elevatorRightCurrent.getValueAsDouble();
+    }
+
     // Arm
 
     @Logged(name = "armPosition")
@@ -288,6 +298,10 @@ public class Windmill extends SubsystemIF {
     @Logged
     public boolean isAtTargetTrajectoryState() {
         return distanceToTargetTrajectoryState() < 0.03;
+    }
+
+    public double getArmCurrent() {
+        return armCurrent.getValueAsDouble();
     }
 
     // -- Control --
@@ -375,31 +389,33 @@ public class Windmill extends SubsystemIF {
     }
 
     public Command createResetToClosestCommand() {
-        return Commands.runOnce(() -> {
-            double angle = MathUtil.inputModulus(getArmPosition(), 0, 1);
-            Logger.info("Starting arm angle: {} rotations", angle);
-            if (angle > 0.5 && angle < 0.85) {
-                WindmillState collectState;
-                try {
-                    collectState = WindmillKinematics.inverseKinematics(0, TrajectoryState.COLLECT.t2d, null, false);
-                } catch (WindmillKinematics.KinematicsException e) {
-                    Logger.error("Cannot go to collect! This is a bug: {}", e);
-                    return;
+        return Commands.runOnce(
+            () -> {
+                double angle = MathUtil.inputModulus(getArmPosition(), 0, 1);
+                Logger.info("Starting arm angle: {} rotations", angle);
+                if (angle > 0.5 && angle < 0.85) {
+                    WindmillState collectState;
+                    try {
+                        collectState = WindmillKinematics.inverseKinematics(0, TrajectoryState.COLLECT.t2d, null, false);
+                    } catch (WindmillKinematics.KinematicsException e) {
+                        Logger.error("Cannot go to collect! This is a bug: {}", e);
+                        return;
+                    }
+                    setState(collectState);
+                    setTargetState(TrajectoryState.COLLECT);
+                } else {
+                    WindmillState stowState;
+                    try {
+                        stowState = WindmillKinematics.inverseKinematics(0, TrajectoryState.STOW.t2d, null);
+                    } catch (WindmillKinematics.KinematicsException e) {
+                        Logger.error("Cannot go to stow! This is a bug: {}", e);
+                        return;
+                    }
+                    setState(stowState);
+                    setTargetState(TrajectoryState.STOW);
                 }
-                setState(collectState);
-                setTargetState(TrajectoryState.COLLECT);
-            } else {
-                WindmillState stowState;
-                try {
-                    stowState = WindmillKinematics.inverseKinematics(0, TrajectoryState.STOW.t2d, null);
-                } catch (WindmillKinematics.KinematicsException e) {
-                    Logger.error("Cannot go to stow! This is a bug: {}", e);
-                    return;
-                }
-                setState(stowState);
-                setTargetState(TrajectoryState.STOW);
-            }
-        }, this);
+            }, this
+        );
     }
 
     public void stopElevator() {
@@ -422,7 +438,7 @@ public class Windmill extends SubsystemIF {
     @Override
     public void onTeleopInit() {
         Commands.waitUntil(() -> zeroed)
-            .andThen(createResetToClosestCommand()).schedule();
+                .andThen(createResetToClosestCommand()).schedule();
     }
 
     @Override

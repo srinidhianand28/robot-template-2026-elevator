@@ -148,6 +148,10 @@ public class SwerveModule {
 
     // Getters
 
+    public String getName() {
+        return name;
+    }
+
     public Translation2d getTranslationOffset() {
         return translationOffset;
     }

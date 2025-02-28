@@ -167,6 +167,10 @@ public class Grabber extends SubsystemIF {
     public boolean isEjecting() {
         return state == GrabberState.EJECTING;
     }
+    
+    public double getCurrent() {
+        return current.getValueAsDouble();
+    }
 
     // -- Periodic --
 
