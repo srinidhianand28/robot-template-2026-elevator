@@ -3,61 +3,61 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.047532894736842,
-        "y": 5.295065789473683
+        "x": 4.955565190612034,
+        "y": 2.8059141800116696
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.194407894736842,
-        "y": 5.788980263157894
+        "x": 4.722078348506769,
+        "y": 1.5509470747485117
       },
       "isLocked": false,
-      "linkedName": "K"
+      "linkedName": "E"
     },
     {
       "anchor": {
-        "x": 2.8929276315789476,
-        "y": 5.898026315789474
+        "x": 3.354769736842105,
+        "y": 2.107072368421054
       },
       "prevControl": {
-        "x": 3.2034106394789763,
-        "y": 5.53022336796944
+        "x": 3.741325025664414,
+        "y": 2.393871453676315
       },
       "nextControl": {
-        "x": 2.475986842105264,
-        "y": 6.391940789473685
+        "x": 2.957072368421053,
+        "y": 1.8120065789473703
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 1.8986842105263155,
-        "y": 7.026973684210526
+        "x": 1.988486842105263,
+        "y": 0.990953947368423
       },
       "prevControl": {
-        "x": 1.6485197368421056,
-        "y": 6.82171052631579
+        "x": 2.2436079545454546,
+        "y": 0.8091619318181813
       },
       "nextControl": {
-        "x": 2.0919525531469656,
-        "y": 7.185552837130034
+        "x": 1.7333698458836242,
+        "y": 1.1727430298189303
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.8091477272727277,
-        "y": 5.047088068181818
+        "x": 3.9328629489756226,
+        "y": 2.795602530958246
       },
       "prevControl": {
-        "x": 3.599030873716079,
-        "y": 5.4110211340684415
+        "x": 3.722746095418974,
+        "y": 2.4316694650716224
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "L"
+      "linkedName": "D"
     }
   ],
   "rotationTargets": [],
@@ -80,10 +80,10 @@
     {
       "fieldPosition": {
         "x": 1.5,
-        "y": 8.0
+        "y": 0.05000000000000071
       },
       "rotationOffset": 0.0,
-      "minWaypointRelativePos": 0.5481283422459918,
+      "minWaypointRelativePos": 0.75,
       "maxWaypointRelativePos": 2.0,
       "name": "Collect Coral"
     }
@@ -91,7 +91,7 @@
   "eventMarkers": [
     {
       "name": "Windmill to Collect",
-      "waypointRelativePos": 0.8476716653512202,
+      "waypointRelativePos": 0.5,
       "endWaypointRelativePos": null,
       "command": {
         "type": "named",
@@ -102,7 +102,7 @@
     },
     {
       "name": "Windmill to L4",
-      "waypointRelativePos": 2.4,
+      "waypointRelativePos": 2.396211523283341,
       "endWaypointRelativePos": null,
       "command": {
         "type": "named",
@@ -122,13 +122,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 124.96842226763883
+    "rotation": 244.50244850666223
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 115.49755149333775
+    "rotation": 300.0
   },
   "useDefaultConstraints": true
 }
