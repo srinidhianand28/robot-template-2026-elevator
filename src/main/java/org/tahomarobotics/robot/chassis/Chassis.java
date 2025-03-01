@@ -4,7 +4,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -12,7 +11,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -21,10 +19,13 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.persistent.CalibrationData;
+import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
 import org.tahomarobotics.robot.util.swerve.SwerveDrivePoseEstimatorDiff;
 import org.tahomarobotics.robot.vision.AprilTagCamera;
 import org.tinylog.Logger;
@@ -34,20 +35,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Chassis extends SubsystemIF {
     private static final Chassis INSTANCE = new Chassis();
 
     // Swerve Modules
-
-    @Logged(name = "modules/frontLeft")
-    private final SwerveModule frontLeft;
-    @Logged(name = "modules/frontRight")
-    private final SwerveModule frontRight;
-    @Logged(name = "modules/backLeft")
-    private final SwerveModule backLeft;
-    @Logged(name = "modules/backRight")
-    private final SwerveModule backRight;
 
     private final List<SwerveModule> modules;
 
@@ -58,21 +49,23 @@ public class Chassis extends SubsystemIF {
     private final StatusSignal<Angle> yaw = pigeon.getYaw();
     private final StatusSignal<AngularVelocity> yawVelocity = pigeon.getAngularVelocityZWorld();
 
-    @Logged
-    private boolean isUsingHeadingFallback = false;
+    private final LoggedStatusSignal[] statusSignals = new LoggedStatusSignal[]{
+        new LoggedStatusSignal("Yaw", yaw),
+        new LoggedStatusSignal("Yaw Velocity", yawVelocity)
+    };
 
-    @Logged
-    public record ValidYaw(Rotation2d yaw, boolean valid) {}
+    @AutoLogOutput(key = "Chassis/Using Heading Fallback?")
+    private boolean isUsingHeadingFallback = false;
 
     // State
 
-    @Logged
+    @AutoLogOutput(key = "Chassis/Target Speeds")
     private ChassisSpeeds targetSpeeds = new ChassisSpeeds();
 
     private Rotation2d heading = new Rotation2d();
     private SwerveModulePosition[] lastModulePosition;
 
-    @Logged
+    @AutoLogOutput(key = "Chassis/Is Field Centric?")
     private final boolean isFieldCentric = true;
     private final CalibrationData<Double[]> swerveCalibration;
     private final Field2d fieldPose = new Field2d();
@@ -88,10 +81,7 @@ public class Chassis extends SubsystemIF {
 
     // Simulation
 
-    @Logged
-    private boolean isUsingHighFidelitySimulation = false;
-
-    // Initialization
+    // -- Initialization --
 
     private Chassis() {
         // Read calibration from rio
@@ -99,11 +89,13 @@ public class Chassis extends SubsystemIF {
 
         // Use calibration to make modules
         Double[] angularOffsets = swerveCalibration.get();
-        frontLeft = new SwerveModule(RobotMap.FRONT_LEFT_MOD, angularOffsets[0]);
-        frontRight = new SwerveModule(RobotMap.FRONT_RIGHT_MOD, angularOffsets[1]);
-        backLeft = new SwerveModule(RobotMap.BACK_LEFT_MOD, angularOffsets[2]);
-        backRight = new SwerveModule(RobotMap.BACK_RIGHT_MOD, angularOffsets[3]);
-        modules = List.of(frontLeft, frontRight, backLeft, backRight);
+        modules = List.of(
+            new SwerveModule(RobotMap.FRONT_LEFT_MOD, angularOffsets[0]),
+            new SwerveModule(RobotMap.FRONT_RIGHT_MOD, angularOffsets[1]),
+            new SwerveModule(RobotMap.BACK_LEFT_MOD, angularOffsets[2]),
+            new SwerveModule(RobotMap.BACK_RIGHT_MOD, angularOffsets[3])
+        );
+        modules.forEach(AutoLogOutputManager::addObject);
 
         kinematics = new SwerveDriveKinematics(
             modules.stream()
@@ -131,7 +123,7 @@ public class Chassis extends SubsystemIF {
 
     @Override
     public SubsystemIF initialize() {
-        SmartDashboard.putData("AlignSwerve", ChassisCommands.createAlignSwerveCommand(this));
+        SmartDashboard.putData("Align Swerve", ChassisCommands.createAlignSwerveCommand(this));
         pigeon.setYaw(0);
 
         var gyro = getYaw().yaw;
@@ -143,7 +135,7 @@ public class Chassis extends SubsystemIF {
         return this;
     }
 
-    // Calibration
+    // -- Calibration --
 
     public void initializeCalibration() {
         modules.forEach(SwerveModule::initializeCalibration);
@@ -161,13 +153,13 @@ public class Chassis extends SubsystemIF {
         modules.forEach(SwerveModule::cancelCalibration);
     }
 
-    // Getters
+    // -- Getters --
 
     public Field2d getField() {
         return fieldPose;
     }
 
-    @Logged(name = "pose")
+    @AutoLogOutput(key = "Chassis/Integrated Pose")
     public Pose2d getPose() {
         synchronized (poseEstimator) {
             return poseEstimator.getEstimatedPosition();
@@ -187,7 +179,7 @@ public class Chassis extends SubsystemIF {
         }
     }
 
-    @Logged(name = "rawPose")
+    @AutoLogOutput(key = "Chassis/Odometry Pose")
     public Pose2d getRawPose() {
         synchronized (poseEstimator) {
             return poseEstimator.getRawPose();
@@ -200,29 +192,29 @@ public class Chassis extends SubsystemIF {
         return modules.stream().map(SwerveModule::getPosition).toArray(SwerveModulePosition[]::new);
     }
 
-    @Logged(name = "states")
+    @AutoLogOutput(key = "Chassis/Module States")
     public SwerveModuleState[] getSwerveModuleStates() {
         return modules.stream().map(SwerveModule::getState).toArray(SwerveModuleState[]::new);
     }
 
-    @Logged(name = "chassisSpeeds")
+    @AutoLogOutput(key = "Chassis/Chassis Speeds")
     public ChassisSpeeds getChassisSpeeds() {
         return kinematics.toChassisSpeeds(getSwerveModuleStates());
     }
 
-    @Logged(name = "yaw")
+    @AutoLogOutput(key = "Chassis/Yaw")
     public ValidYaw getYaw() {
         boolean valid = BaseStatusSignal.refreshAll(yaw, yawVelocity).equals(StatusCode.OK);
         return new ValidYaw(
             Rotation2d.fromDegrees(BaseStatusSignal.getLatencyCompensatedValueAsDouble(yaw, yawVelocity)), valid);
     }
 
-    @Logged(name = "heading")
+    @AutoLogOutput(key = "Chassis/Heading")
     public Rotation2d getHeading() {
         return heading;
     }
 
-    // Setters
+    // -- Setters --
 
     public void drive(ChassisSpeeds velocity, boolean isFieldCentric) {
         if (isFieldCentric) {
@@ -264,22 +256,21 @@ public class Chassis extends SubsystemIF {
         resetOdometry(new Pose2d(getPose().getTranslation(), heading));
     }
 
-    // Odometry
+    // -- Odometry --
 
     private void odometryThread() {
         Threads.setCurrentThreadPriority(true, 1);
 
         // Get signals array
-        List<BaseStatusSignal> signalList = new ArrayList<>(getStatusSignals());
+        List<LoggedStatusSignal> statusSignals_ = new ArrayList<>(List.of(this.statusSignals));
         for (var module : this.modules) {
-            signalList.addAll(module.getStatusSignals());
+            statusSignals_.addAll(List.of(module.getStatusSignals()));
         }
-
-        BaseStatusSignal[] signals = signalList.toArray(BaseStatusSignal[]::new);
+        LoggedStatusSignal[] statusSignals = statusSignals_.toArray(LoggedStatusSignal[]::new);
 
         while (true) {
             // Wait for all signals to arrive
-            BaseStatusSignal.waitForAll(4 / RobotConfiguration.ODOMETRY_UPDATE_FREQUENCY, signals);
+            LoggedStatusSignal.waitForAll(4 / RobotConfiguration.ODOMETRY_UPDATE_FREQUENCY, statusSignals);
             updatePosition();
         }
     }
@@ -325,14 +316,14 @@ public class Chassis extends SubsystemIF {
     public void processVisionUpdate(AprilTagCamera.EstimatedRobotPose estimatedRobotPose) {
         synchronized (poseEstimator) {
             poseEstimator.addVisionMeasurement(
-                estimatedRobotPose.pose,
-                estimatedRobotPose.timestamp,
-                estimatedRobotPose.stdDevs
+                estimatedRobotPose.pose(),
+                estimatedRobotPose.timestamp(),
+                estimatedRobotPose.stdDevs()
             );
         }
     }
 
-    // Periodic
+    // -- Periodic --
 
     @Override
     public void periodic() {
@@ -351,52 +342,34 @@ public class Chassis extends SubsystemIF {
 
             setSwerveStates(swerveModuleStates);
         }
+
+        LoggedStatusSignal.log("Chassis/", statusSignals);
     }
 
-    // Simulation
+    // -- Simulation --
 
     private double lastUpdate = Timer.getFPGATimestamp();
-    private double simHeading = 0;
-
-    /** Enables high fidelity simulation. */
-    public void useHighFidelitySimulation() {
-        isUsingHighFidelitySimulation = true;
-    }
-
-    /** Enables low fidelity simulation. */
-    public void useLowFidelitySimulation() {
-        isUsingHighFidelitySimulation = false;
-    }
 
     @Override
     public void onSimulationInit() {
-        getStatusSignals().forEach(s -> s.setUpdateFrequency(1000));
-
         modules.forEach(SwerveModule::simulationInit);
     }
 
     @Override
     public void simulationPeriodic() {
-        modules.forEach(m -> m.simulationPeriodic(isUsingHighFidelitySimulation));
+        modules.forEach(SwerveModule::simulationPeriodic);
 
         double currentTime = Timer.getFPGATimestamp();
         double dT = Timer.getFPGATimestamp() - lastUpdate;
         lastUpdate = currentTime;
 
-        if (isUsingHighFidelitySimulation) {
-            pigeon.getSimState().addYaw(getChassisSpeeds().omegaRadiansPerSecond * dT);
-        } else {
-            double dTheta = Units.radiansToDegrees(getChassisSpeeds().omegaRadiansPerSecond) * dT;
-            simHeading += dTheta;
-            pigeon.getSimState().setRawYaw(simHeading);
-            pigeon.getSimState().setAngularVelocityZ(dTheta);
-        }
+        pigeon.getSimState().addYaw(getChassisSpeeds().omegaRadiansPerSecond * dT);
     }
 
-    // Status Signals
+    // -- Status Signals --
 
-    @Logged
-    public double getCurrentDraw() {
+    @AutoLogOutput(key = "Chassis/Total Drive Current")
+    public double getTotalDriveCurrent() {
         double totalCurrent = 0;
         for (double current : modules.stream().map(SwerveModule::getDriveCurrent).toList()) {
             totalCurrent += current;
@@ -404,7 +377,7 @@ public class Chassis extends SubsystemIF {
         return totalCurrent;
     }
 
-    private List<BaseStatusSignal> getStatusSignals() {
-        return List.of(yaw, yawVelocity);
-    }
+    // -- Records --
+
+    public record ValidYaw(Rotation2d yaw, boolean valid) {}
 }

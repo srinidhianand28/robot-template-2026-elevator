@@ -5,11 +5,11 @@ import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.collector.Collector;
@@ -26,7 +26,6 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 import static org.tahomarobotics.robot.grabber.GrabberConstants.*;
 
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Grabber extends SubsystemIF {
     private final static Grabber INSTANCE = new Grabber();
 
@@ -41,8 +40,7 @@ public class Grabber extends SubsystemIF {
     private final StatusSignal<AngularVelocity> grabberVelocity;
     private final StatusSignal<Current> current;
 
-    @Logged
-    private final LoggedStatusSignal.List statusSignals;
+    private final LoggedStatusSignal[] statusSignals;
 
     // Control requests
 
@@ -52,7 +50,7 @@ public class Grabber extends SubsystemIF {
 
     // State
 
-    @Logged
+    @AutoLogOutput(key = "Grabber/State")
     private GrabberState state = GrabberState.DISABLED;
 
     private final Timer collectionTimer = new Timer();
@@ -73,12 +71,12 @@ public class Grabber extends SubsystemIF {
         grabberVelocity = motor.getVelocity();
         current = motor.getSupplyCurrent();
 
-        statusSignals = new LoggedStatusSignal.List(List.of(
+        statusSignals = new LoggedStatusSignal[]{
             new LoggedStatusSignal("Grabber Velocity", grabberVelocity),
             new LoggedStatusSignal("Grabber Current", current)
-        ));
+        };
 
-        statusSignals.setUpdateFrequencyForAll(RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
+        LoggedStatusSignal.setUpdateFrequencyForAll(statusSignals, RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
         ParentDevice.optimizeBusUtilizationForAll(motor);
     }
 
@@ -150,22 +148,18 @@ public class Grabber extends SubsystemIF {
         return SmartDashboard.getBoolean("arm at position", true);
     }
 
-    @Logged
     public boolean isDisabled() {
         return state == GrabberState.DISABLED;
     }
 
-    @Logged
     public boolean isHolding() {
         return state == GrabberState.HOLDING;
     }
 
-    @Logged
     public boolean isCollecting() {
         return state == GrabberState.COLLECTING;
     }
 
-    @Logged
     public boolean isEjecting() {
         return state == GrabberState.EJECTING;
     }
@@ -178,7 +172,9 @@ public class Grabber extends SubsystemIF {
 
     @Override
     public void periodic() {
-        statusSignals.refreshAll();
+        LoggedStatusSignal.refreshAll(statusSignals);
+        LoggedStatusSignal.log("Grabber/", statusSignals);
+
         stateMachine();
     }
 

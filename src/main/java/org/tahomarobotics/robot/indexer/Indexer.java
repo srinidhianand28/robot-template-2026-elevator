@@ -1,19 +1,19 @@
 package org.tahomarobotics.robot.indexer;
 
-import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.DigitalInput;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.RobustConfigurator;
 import org.tahomarobotics.robot.util.SubsystemIF;
+import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 
 import java.util.List;
@@ -40,13 +40,15 @@ public class Indexer extends SubsystemIF {
     private final StatusSignal<AngularVelocity> velocity;
     private final StatusSignal<Current> current;
 
+    private final LoggedStatusSignal[] statusSignals;
+
     // Control Requests
 
     private final MotionMagicVelocityVoltage velocityControl = new MotionMagicVelocityVoltage(0);
 
     // State
 
-    @Logged
+    @AutoLogOutput(key = "Indexer/State")
     private IndexerState state = IndexerState.DISABLED;
 
     // -- Initialization --
@@ -68,8 +70,13 @@ public class Indexer extends SubsystemIF {
         velocity = motor.getVelocity();
         current = motor.getSupplyCurrent();
 
-        BaseStatusSignal.setUpdateFrequencyForAll(
-            RobotConfiguration.MECHANISM_UPDATE_FREQUENCY, position, velocity, current);
+        statusSignals = new LoggedStatusSignal[]{
+            new LoggedStatusSignal("Position", position),
+            new LoggedStatusSignal("Velocity", velocity),
+            new LoggedStatusSignal("Current", current)
+        };
+
+        LoggedStatusSignal.setUpdateFrequencyForAll(statusSignals, RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
         ParentDevice.optimizeBusUtilizationForAll(motor);
     }
 
@@ -116,22 +123,19 @@ public class Indexer extends SubsystemIF {
 
     // -- Getter(s) --
 
-    @Logged
     public double getPosition() {
         return position.getValueAsDouble();
     }
 
-    @Logged
     public double getVelocity() {
         return velocity.getValueAsDouble();
     }
 
-    @Logged
     public double getCurrent() {
         return current.getValueAsDouble();
     }
 
-    @Logged
+    @AutoLogOutput(key = "Indexer/Beam Brake Tripped?")
     public boolean isBeanBakeTripped() {
         return !beanBake.get();
     }
@@ -140,7 +144,8 @@ public class Indexer extends SubsystemIF {
 
     @Override
     public void periodic() {
-        BaseStatusSignal.refreshAll(position, velocity, current);
+        LoggedStatusSignal.refreshAll(statusSignals);
+        LoggedStatusSignal.log("Indexer/", statusSignals);
 
         stateMachine();
     }

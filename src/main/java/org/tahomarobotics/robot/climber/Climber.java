@@ -7,7 +7,6 @@ import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
@@ -15,6 +14,7 @@ import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.climber.commands.ClimberCommands;
@@ -30,7 +30,6 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 import static org.tahomarobotics.robot.climber.ClimberConstants.climberMotorConfig;
 
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Climber extends SubsystemIF {
     private final static Climber INSTANCE = new Climber();
 
@@ -44,8 +43,8 @@ public class Climber extends SubsystemIF {
 
     // Status Signals
 
-    @Logged
-    private final LoggedStatusSignal.List statusSignals;
+    private final LoggedStatusSignal[] statusSignals;
+
     private final StatusSignal<Current> climberMotorCurrent;
     private final StatusSignal<Current> climberFollowerCurrent;
     private final StatusSignal<Angle> climberMotorPosition;
@@ -59,11 +58,11 @@ public class Climber extends SubsystemIF {
 
     // State
 
-    @Logged
+    @AutoLogOutput(key = "Climber/State")
     private ClimberState climbState = ClimberState.ZEROED;
-    @Logged
+    @AutoLogOutput(key = "Climber/Target Position")
     private double targetPosition;
-    @Logged
+    @AutoLogOutput(key = "Climber/Solenoid Voltage")
     private double solenoidVoltage;
 
     // -- Initialization --
@@ -79,16 +78,16 @@ public class Climber extends SubsystemIF {
         climberMotorVoltage = climberMotor.getMotorVoltage();
         climberFollowerVoltage = climberFollower.getMotorVoltage();
 
-        statusSignals = new LoggedStatusSignal.List(List.of(
+        statusSignals = new LoggedStatusSignal[]{
             new LoggedStatusSignal("Climber Motor Position", climberMotorPosition),
             new LoggedStatusSignal("Climber Follower Position", climberFollowerPosition),
             new LoggedStatusSignal("Climber Motor Current", climberMotorCurrent),
             new LoggedStatusSignal("Climber Follower Current", climberFollowerCurrent),
             new LoggedStatusSignal("Climber Motor Voltage", climberMotorVoltage),
             new LoggedStatusSignal("Climber Follower Voltage", climberFollowerVoltage)
-        ));
+        };
 
-        statusSignals.setUpdateFrequencyForAll(RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
+        LoggedStatusSignal.setUpdateFrequencyForAll(statusSignals, RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
         ParentDevice.optimizeBusUtilizationForAll(climberMotor, climberFollower);
     }
 
@@ -114,7 +113,6 @@ public class Climber extends SubsystemIF {
 
     // -- Getters --
 
-    @Logged
     @Override
     public double getTotalCurrent() {
         return climberMotorCurrent.getValueAsDouble() + climberFollowerCurrent.getValueAsDouble();
@@ -124,7 +122,7 @@ public class Climber extends SubsystemIF {
         return climbState;
     }
 
-    @Logged
+    @AutoLogOutput(key = "Climber/Is at Target Position?")
     public boolean isAtTargetPosition() {
         return (Math.abs(climberMotorPosition.getValueAsDouble() - targetPosition) < ClimberConstants.CLIMB_POSITION_TOLERANCE);
     }
@@ -187,7 +185,9 @@ public class Climber extends SubsystemIF {
 
     @Override
     public void periodic() {
-        statusSignals.refreshAll();
+        LoggedStatusSignal.refreshAll(statusSignals);
+        LoggedStatusSignal.log("Climber/", statusSignals);
+
         solenoidVoltage = ratchetSolenoid.getMotorOutputVoltage();
     }
 

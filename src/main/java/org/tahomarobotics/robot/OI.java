@@ -1,7 +1,6 @@
 package org.tahomarobotics.robot;
 
 import com.ctre.phoenix6.SignalLogger;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -32,7 +31,6 @@ import org.tahomarobotics.robot.windmill.WindmillConstants;
 import java.util.List;
 import java.util.function.Function;
 
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class OI extends SubsystemIF {
     private static final OI INSTANCE = new OI();
 
@@ -187,17 +185,14 @@ public class OI extends SubsystemIF {
 
     // -- Inputs --
 
-    @Logged(name = "Controller/LeftX")
     public double getLeftX() {
         return -desensitizePowerBased(controller.getLeftX(), TRANSLATIONAL_SENSITIVITY);
     }
 
-    @Logged(name = "Controller/LeftY")
     public double getLeftY() {
         return -desensitizePowerBased(controller.getLeftY(), TRANSLATIONAL_SENSITIVITY);
     }
 
-    @Logged(name = "Controller/RightX")
     public double getRightX() {
         return -desensitizePowerBased(controller.getRightX(), ROTATIONAL_SENSITIVITY);
     }

@@ -8,7 +8,6 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
@@ -22,6 +21,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.collector.Collector;
@@ -41,7 +41,6 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 import static org.tahomarobotics.robot.windmill.WindmillConstants.*;
 
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Windmill extends SubsystemIF {
     private static final Windmill INSTANCE = new Windmill();
 
@@ -61,8 +60,7 @@ public class Windmill extends SubsystemIF {
     private final StatusSignal<AngularVelocity> elevatorVelocity, armVelocity;
     private final StatusSignal<Current> elevatorLeftCurrent, elevatorRightCurrent, armCurrent;
 
-    @Logged
-    private final LoggedStatusSignal.List statusSignals;
+    private final LoggedStatusSignal[] statusSignals;
 
     // Control Requests
 
@@ -76,7 +74,7 @@ public class Windmill extends SubsystemIF {
     private WindmillState targetState = WindmillState.fromPrevious(0, 0, 0, null);
     private TrajectoryState targetTrajectoryState = TrajectoryState.START;
 
-    @Logged
+    @AutoLogOutput(key = "Windmill/Is Zeroed?")
     private boolean zeroed = false;
 
     // Trajectory
@@ -113,7 +111,7 @@ public class Windmill extends SubsystemIF {
         armVelocity = armMotor.getVelocity();
         armCurrent = armMotor.getSupplyCurrent();
 
-        statusSignals = new LoggedStatusSignal.List(List.of(
+        statusSignals = new LoggedStatusSignal[]{
             new LoggedStatusSignal("Elevator Position", elevatorPosition),
             new LoggedStatusSignal("Elevator Velocity", elevatorVelocity),
             new LoggedStatusSignal("Elevator Left Current", elevatorLeftCurrent),
@@ -127,9 +125,9 @@ public class Windmill extends SubsystemIF {
             new LoggedStatusSignal("Arm Encoder Velocity", armEncoder.getVelocity()),
             new LoggedStatusSignal("Elevator Left Motor Voltage", elevatorLeftMotor.getMotorVoltage()),
             new LoggedStatusSignal("Arm Motor Voltage", armMotor.getMotorVoltage())
-        ));
+        };
 
-        statusSignals.setUpdateFrequencyForAll(RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
+        LoggedStatusSignal.setUpdateFrequencyForAll(statusSignals, RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
 
         ParentDevice.optimizeBusUtilizationForAll(
             elevatorLeftMotor, elevatorRightMotor, elevatorEncoder, armMotor);
@@ -182,7 +180,7 @@ public class Windmill extends SubsystemIF {
 
     // -- Getters --
 
-    @Logged(name = "windmillPosition")
+    @AutoLogOutput(key = "Windmill/Position")
     public Translation2d getWindmillPosition() {
         double armAngleRotations = MathUtil.inputModulus(getArmPosition(), 0, 1);
 
@@ -193,12 +191,10 @@ public class Windmill extends SubsystemIF {
         );
     }
 
-    @Logged(name = "windmillX")
     public double getWindmillPositionX() {
         return getWindmillPosition().getX();
     }
 
-    @Logged(name = "windmillY")
     public double getWindmillPositionY() {
         return getWindmillPosition().getY();
     }
@@ -219,12 +215,12 @@ public class Windmill extends SubsystemIF {
         return new WindmillState(0, elevatorState, armState);
     }
 
-    @Logged(name = "Target State")
+    @AutoLogOutput(key = "Windmill/Target State")
     public WindmillState getTargetState() {
         return targetState;
     }
 
-    @Logged(name = "Target Trajectory State")
+    @AutoLogOutput(key = "Windmill/Target Trajectory State")
     public TrajectoryState getTargetTrajectoryState() {
         return targetTrajectoryState;
     }
@@ -235,29 +231,24 @@ public class Windmill extends SubsystemIF {
 
     // Elevator
 
-    @Logged(name = "elevatorHeight")
+    @AutoLogOutput(key = "Windmill/Elevator/Height")
     public double getElevatorHeight() {
         return elevatorPosition.getValueAsDouble();
     }
 
-    @Logged(name = "elevatorTarget")
+    @AutoLogOutput(key = "Windmill/Elevator/Target Height")
     public double getElevatorTarget() {
         return targetHeight;
     }
 
-    @Logged
+    @AutoLogOutput(key = "Windmill/Elevator/Is at Position?")
     public boolean isElevatorAtPosition() {
         return Math.abs(targetHeight - getElevatorHeight()) <= ELEVATOR_POSITION_TOLERANCE;
     }
 
-    @Logged
+    @AutoLogOutput(key = "Windmill/Elevator/Is Moving?")
     public boolean isElevatorMoving() {
         return Math.abs(elevatorVelocity.refresh().getValueAsDouble()) >= ELEVATOR_VELOCITY_TOLERANCE;
-    }
-
-    @Logged
-    public boolean isInSecondStage() {
-        return getElevatorHeight() > ELEVATOR_LOW_STAGE_MAX;
     }
 
     public double getElevatorLeftCurrent() {
@@ -270,32 +261,32 @@ public class Windmill extends SubsystemIF {
 
     // Arm
 
-    @Logged(name = "armPosition")
+    @AutoLogOutput(key = "Windmill/Arm/Position")
     public double getArmPosition() {
         return armPosition.getValueAsDouble();
     }
 
-    @Logged(name = "armTarget")
+    @AutoLogOutput(key = "Windmill/Arm/Target Position")
     public double getArmTarget() {
         return targetAngle;
     }
 
-    @Logged
+    @AutoLogOutput(key = "Windmill/Arm/Is at Position?")
     public boolean isArmAtPosition() {
         return Math.abs(getArmPosition() - targetAngle) < ARM_POSITION_TOLERANCE;
     }
 
-    @Logged
+    @AutoLogOutput(key = "Windmill/Arm/Is Moving?")
     public boolean isArmMoving() {
         return Math.abs(armVelocity.refresh().getValueAsDouble()) >= ARM_VELOCITY_TOLERANCE;
     }
 
-    @Logged
+    @AutoLogOutput(key = "Windmill/Distance to Target Trajectory State")
     public double distanceToTargetTrajectoryState() {
         return targetTrajectoryState.t2d.getDistance(getWindmillPosition());
     }
 
-    @Logged
+    @AutoLogOutput(key = "Windmill/Is at Target Trajectory State?")
     public boolean isAtTargetTrajectoryState() {
         return distanceToTargetTrajectoryState() < 0.03;
     }
@@ -415,7 +406,7 @@ public class Windmill extends SubsystemIF {
                     setTargetState(TrajectoryState.STOW);
                 }
             }, this
-        );
+        ).withName("Windmill - Reset to Closest");
     }
 
     public void stopElevator() {
@@ -430,7 +421,8 @@ public class Windmill extends SubsystemIF {
 
     @Override
     public void periodic() {
-        statusSignals.refreshAll();
+        LoggedStatusSignal.refreshAll(statusSignals);
+        LoggedStatusSignal.log("Windmill/", statusSignals);
     }
 
     // -- Overrides --

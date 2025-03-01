@@ -1,18 +1,19 @@
 package org.tahomarobotics.robot.windmill.commands;
 
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import org.tahomarobotics.robot.windmill.*;
-import org.tahomarobotics.robot.windmill.WindmillConstants.*;
+import org.tahomarobotics.robot.windmill.Windmill;
+import org.tahomarobotics.robot.windmill.WindmillConstants.TrajectoryState;
+import org.tahomarobotics.robot.windmill.WindmillKinematics;
+import org.tahomarobotics.robot.windmill.WindmillState;
+import org.tahomarobotics.robot.windmill.WindmillTrajectory;
 import org.tinylog.Logger;
 
 import java.util.Optional;
 
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class WindmillMoveCommand extends Command {
     private static final boolean DEBUG = false;
     private static final double TIME_ELAPSED_TOLERANCE = 0.05;
@@ -91,6 +92,11 @@ public class WindmillMoveCommand extends Command {
     @Override
     public boolean isFinished() {
         return windmill.isAtTargetTrajectoryState() || timer.hasElapsed(trajectory.getDuration() + TIME_ELAPSED_TOLERANCE);
+    }
+
+    @Override
+    public String getName() {
+        return "Windmill Move Command";
     }
 
     // -- Helpers --

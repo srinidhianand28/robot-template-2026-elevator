@@ -1,6 +1,5 @@
 package org.tahomarobotics.robot.vision;
 
-import edu.wpi.first.epilogue.Logged;
 import org.photonvision.simulation.VisionSystemSim;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.util.SubsystemIF;
@@ -15,7 +14,6 @@ import java.util.stream.Stream;
  * A subsystem to consolidate vision updates from multiple AprilTag cameras. Currently, only PhotonVision cameras
  * are supported but if the Limelight 4 is evaluated to be significantly better, then support will be added.
  */
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Vision extends SubsystemIF implements AutoCloseable {
     private static final Vision INSTANCE = new Vision();
 
@@ -25,14 +23,12 @@ public class Vision extends SubsystemIF implements AutoCloseable {
 
     // Camera
 
-    @Logged
     private final AprilTagCamera elevatorSwerve =
         new AprilTagCamera(
             VisionConstants.ELEVATOR_SWERVE, VisionConstants.simOV9782Properties,
             estimationCallback
         );
 
-    @Logged
     private final AprilTagCamera climberSwerve =
         new AprilTagCamera(
             VisionConstants.CLIMBER_SWERVE, VisionConstants.simOV9782Properties,

@@ -101,7 +101,7 @@ public class WindmillTrajectory {
 
             if (trajectory_.isPresent()) {
                 var trajectory = trajectory_.get();
-                for (double t = 0; t <= trajectory.getDuration(); t += Robot.kDefaultPeriod) {
+                for (double t = 0; t <= trajectory.getDuration(); t += Robot.defaultPeriodSecs) {
                     try {
                         trajectory.sampleWindmillState(t);
                     } catch (WindmillKinematics.KinematicsException e) {

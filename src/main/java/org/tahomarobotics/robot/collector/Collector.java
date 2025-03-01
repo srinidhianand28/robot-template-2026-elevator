@@ -6,12 +6,12 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.indexer.Indexer;
@@ -28,7 +28,6 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 import static org.tahomarobotics.robot.collector.CollectorConstants.*;
 
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class Collector extends SubsystemIF {
     private final static Collector INSTANCE = new Collector();
 
@@ -46,8 +45,7 @@ public class Collector extends SubsystemIF {
     private final StatusSignal<AngularVelocity> leftDeployVelocity, rightDeployVelocity, collectorVelocity;
     private final StatusSignal<Current> collectorCurrent, leftDeployCurrent, rightDeployCurrent;
 
-    @Logged
-    private final LoggedStatusSignal.List statusSignals;
+    private final LoggedStatusSignal[] statusSignals;
 
     // Control Requests
 
@@ -60,11 +58,11 @@ public class Collector extends SubsystemIF {
 
     // State
 
-    @Logged
+    @AutoLogOutput(key = "Collector/Target Deploy State")
     private TargetDeployState targetDeployState = TargetDeployState.ZEROED;
-    @Logged
+    @AutoLogOutput(key = "Collector/Target Collector State")
     private TargetCollectorState targetCollectorState = TargetCollectorState.DISABLED;
-    @Logged
+    @AutoLogOutput(key = "Game Piece Mode")
     private GamePiece collectionMode = GamePiece.CORAL;
 
     // -- Initialization --
@@ -99,7 +97,7 @@ public class Collector extends SubsystemIF {
         rightDeployCurrent = rightMotor.getSupplyCurrent();
         collectorCurrent = collectorMotor.getSupplyCurrent();
 
-        statusSignals = new LoggedStatusSignal.List(List.of(
+        statusSignals = new LoggedStatusSignal[]{
             new LoggedStatusSignal("Left Deploy Position", leftDeployPosition),
             new LoggedStatusSignal("Right Deploy Position", rightDeployPosition),
             new LoggedStatusSignal("Left Deploy Velocity", leftDeployVelocity),
@@ -108,9 +106,9 @@ public class Collector extends SubsystemIF {
             new LoggedStatusSignal("Left Deploy Current", leftDeployCurrent),
             new LoggedStatusSignal("Right Deploy Current", rightDeployCurrent),
             new LoggedStatusSignal("Collector Collect Current", collectorCurrent)
-        ));
+        };
 
-        statusSignals.setUpdateFrequencyForAll(RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
+        LoggedStatusSignal.setUpdateFrequencyForAll(statusSignals, RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
         ParentDevice.optimizeBusUtilizationForAll(leftMotor, rightMotor, collectorMotor);
     }
 
@@ -286,7 +284,7 @@ public class Collector extends SubsystemIF {
     }
 
     // -- Getters --
-    
+
     public double getCollectorCurrent() {
         return collectorCurrent.getValueAsDouble();
     }
@@ -315,7 +313,9 @@ public class Collector extends SubsystemIF {
 
     @Override
     public void periodic() {
-        statusSignals.refreshAll();
+        LoggedStatusSignal.refreshAll(statusSignals);
+        LoggedStatusSignal.log("Collector/", statusSignals);
+
         collectorStateMachine();
     }
 

@@ -1,7 +1,5 @@
 package org.tahomarobotics.robot.vision;
 
-import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.epilogue.NotLogged;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -11,11 +9,8 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.numbers.N8;
 import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonUtils;
 import org.photonvision.estimation.TargetModel;
@@ -77,13 +72,13 @@ import static org.tahomarobotics.robot.vision.VisionConstants.*;
  *    (if they are not then standard deviations can't fix them).</li>
  * </ol>
  */
-@Logged(strategy = Logged.Strategy.OPT_IN)
 public class AprilTagCamera implements AutoCloseable {
     private final TaggedLogger logger;
 
     // Camera
 
-    @Logged
+    private final String name;
+    @AutoLogOutput(key = "Vision/{name}/Configuration")
     protected final CameraConfiguration configuration;
     protected final PhotonCamera camera;
     protected final PhotonCameraSim sim;
@@ -98,15 +93,23 @@ public class AprilTagCamera implements AutoCloseable {
     // Diagnostics
 
     // Vision measurements that have been adjusted and are passed to the callback.
-    @Logged
-    private Pose2d multiTagPose = new Pose2d(), singleTagPose = new Pose2d();
+    @AutoLogOutput(key = "Vision/{name}/Multi-Tag Pose")
+    private Pose2d multiTagPose = new Pose2d();
+    @AutoLogOutput(key = "Vision/{name}/Single-Tag Pose")
+    private Pose2d singleTagPose = new Pose2d();
 
-    @Logged(importance = Logged.Importance.DEBUG)
-    private int failedUpdates;
-    @Logged(importance = Logged.Importance.DEBUG)
-    private int singleTagUpdates = 0, multiTagUpdates = 0;
-    @Logged(importance = Logged.Importance.DEBUG)
-    private double estimationTime, photonvisionLatency, processingTime;
+    @AutoLogOutput(key = "Vision/{name}/Failed Updates")
+    private int failedUpdates = 0;
+    @AutoLogOutput(key = "Vision/{name}/Single-Tag Updates")
+    private int singleTagUpdates = 0;
+    @AutoLogOutput(key = "Vision/{name}/Multi-Tag Updates")
+    private int multiTagUpdates = 0;
+    @AutoLogOutput(key = "Vision/{name}/Estimation Time")
+    private double estimationTime = 0;
+    @AutoLogOutput(key = "Vision/{name}/Camera-to-Robot Latency")
+    private double photonvisionLatency = 0;
+    @AutoLogOutput(key = "Vision/{name}/Processing Time")
+    private double processingTime = 0;
 
     // Initialization
 
@@ -122,6 +125,7 @@ public class AprilTagCamera implements AutoCloseable {
         SimCameraProperties simProperties,
         Consumer<EstimatedRobotPose> callback
     ) {
+        this.name = configuration.name();
         this.configuration = configuration;
         this.callback = callback;
         this.notifier = new Notifier(this::processUnreadVisionUpdates);
@@ -145,7 +149,7 @@ public class AprilTagCamera implements AutoCloseable {
             distortionCoefficients = simProperties.getDistCoeffs(); // ^
         }
 
-        notifier.startPeriodic(Robot.kDefaultPeriod);
+        notifier.startPeriodic(Robot.defaultPeriodSecs);
     }
 
     // Processing
@@ -353,7 +357,7 @@ public class AprilTagCamera implements AutoCloseable {
     // Diagnostics
 
     /** Whether the camera is currently connected. */
-    @Logged
+    @AutoLogOutput(key = "Vision/{name}/Connected?")
     public boolean connected() {
         return camera.isConnected();
     }
@@ -371,32 +375,8 @@ public class AprilTagCamera implements AutoCloseable {
      * A timestamped estimated robot pose with associated trust values (standard deviations)
      * and the targets used for the estimation.
      */
-    @Logged
-    public static class EstimatedRobotPose {
-        public final String cameraName;
-        public final double timestamp;
-        public final Type type;
-
-        public final Pose2d pose;
-
-        @NotLogged
-        public final Vector<N3> stdDevs;
-        @NotLogged
-        public final List<PhotonTrackedTarget> targets;
-
-        public EstimatedRobotPose(
-            String cameraName,
-            double timestamp, Type type, Pose2d pose, Vector<N3> stdDevs, List<PhotonTrackedTarget> targets
-        ) {
-            this.cameraName = cameraName;
-            this.timestamp = timestamp;
-            this.type = type;
-            this.pose = pose;
-            this.stdDevs = stdDevs;
-            this.targets = targets;
-        }
-
-        @Logged
+    public record EstimatedRobotPose(String cameraName, double timestamp, AprilTagCamera.EstimatedRobotPose.Type type, Pose2d pose, Vector<N3> stdDevs,
+                                     List<PhotonTrackedTarget> targets) {
         public enum Type {
             MULTI_TAG, SINGLE_TAG
         }

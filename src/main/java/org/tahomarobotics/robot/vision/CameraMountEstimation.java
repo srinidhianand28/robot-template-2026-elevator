@@ -59,7 +59,7 @@ public class CameraMountEstimation {
 
         Pose2d robotPose2d = new Pose2d(x, y, new Rotation2d(h));
 
-        for (PhotonTrackedTarget target : estimatedRobotPose.targets) {
+        for (PhotonTrackedTarget target : estimatedRobotPose.targets()) {
 
             Transform3d cameraToTargetTranspose = target.getBestCameraToTarget();
 
@@ -73,7 +73,7 @@ public class CameraMountEstimation {
             Rotation3d r = cameraToRobotTransform.getRotation();
             // TODO undo this change
             SmartDashboard.putNumberArray(
-                estimatedRobotPose.cameraName + "-Camera2Robot", new double[]{
+                estimatedRobotPose.cameraName() + "-Camera2Robot", new double[]{
                     Units.metersToInches(t.getX()),
                     Units.metersToInches(t.getY()),
                     Units.metersToInches(t.getZ()),
@@ -82,7 +82,7 @@ public class CameraMountEstimation {
                     Units.radiansToDegrees(r.getZ())}
             );
 
-            System.out.println(estimatedRobotPose.cameraName + " (" + target.fiducialId + ")---> " + cameraToRobotTransform);
+            System.out.println(estimatedRobotPose.cameraName() + " (" + target.fiducialId + ")---> " + cameraToRobotTransform);
 
         }
     }

@@ -1,13 +1,14 @@
 package org.tahomarobotics.robot;
 
-import edu.wpi.first.epilogue.Epilogue;
-import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.epilogue.NotLogged;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import org.littletonrobotics.junction.AutoLogOutputManager;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import org.tahomarobotics.robot.auto.Autonomous;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.check.SystemCheck;
@@ -16,7 +17,6 @@ import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.indexer.Indexer;
 import org.tahomarobotics.robot.util.SubsystemIF;
-import org.tahomarobotics.robot.util.shims.FauxWatchdog;
 import org.tahomarobotics.robot.vision.Vision;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.commands.WindmillTrajectories;
@@ -24,40 +24,19 @@ import org.tinylog.Logger;
 
 import java.util.List;
 
-@Logged
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
     // Subsystems
 
-    @Logged(name = "Chassis")
-    private final Chassis chassis = Chassis.getInstance();
-    @Logged(name = "Autonomous")
-    private final Autonomous autonomous = Autonomous.getInstance();
-    @Logged(name = "Vision")
-    private final Vision vision = Vision.getInstance();
-    @Logged(name = "Windmill")
-    private final Windmill windmill = Windmill.getInstance();
-    @Logged(name = "Collector")
-    private final Collector collector = Collector.getInstance();
-    @Logged(name = "Indexer")
-    private final Indexer indexer = Indexer.getInstance();
-    @Logged(name = "Grabber")
-    private final Grabber grabber = Grabber.getInstance();
-    @Logged(name = "Climber")
-    private final Climber climber = Climber.getInstance();
-    @Logged(name = "OI")
-    private final OI oi = OI.getInstance();
-
-    @NotLogged
     private final List<SubsystemIF> subsystems = List.of(
-        chassis.initialize(),
-        autonomous.initialize(),
-        vision.initialize(),
-        windmill.initialize(),
-        indexer.initialize(),
-        collector.initialize(),
-        climber.initialize(),
-        grabber.initialize(),
-        oi.initialize()
+        Chassis.getInstance().initialize(),
+        Autonomous.getInstance().initialize(),
+        Vision.getInstance().initialize(),
+        Windmill.getInstance().initialize(),
+        Indexer.getInstance().initialize(),
+        Collector.getInstance().initialize(),
+        Climber.getInstance().initialize(),
+        Grabber.getInstance().initialize(),
+        OI.getInstance().initialize()
     );
 
     private double autoStartTime;
@@ -65,25 +44,19 @@ public class Robot extends TimedRobot {
     // Robot
 
     public Robot() {
-        Epilogue.configure(configuration -> {
-            configuration.backend = configuration.backend.lazy();
-            configuration.minimumImportance = Logged.Importance.DEBUG; // TODO
-        });
+        subsystems.forEach(AutoLogOutputManager::addObject);
 
-        Epilogue.bind(this);
-//        DataLogManager.start(); // TODO fix this
+        // Log various aspects of our robot
+        logCommandScheduler();
+        // TODO: Possibly need a warmup command for record logging.
+        configureAdvantageKit();
 
+        // Preload Trajectories
+        // TODO: Lazy load them so they don't impact startup times
         WindmillTrajectories.initialize();
         SystemCheck.initialize();
 
-//        disableWatchdog(`this, IterativeRobotBase.class);
-//        disableWatchdog(CommandScheduler.getInstance(), CommandScheduler.class);
-        logCommandScheduler();
-    }
-
-    @Override
-    public void robotPeriodic() {
-        CommandScheduler.getInstance().run();
+        Logger.info("--- Robot Initialized ---");
     }
 
     private void logCommandScheduler() {
@@ -99,10 +72,25 @@ public class Robot extends TimedRobot {
         });
     }
 
+    private void configureAdvantageKit() {
+        org.littletonrobotics.junction.Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+        // TODO: If bandwidth usage is too high, add toggle for NT4 logging.
+        org.littletonrobotics.junction.Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+
+        org.littletonrobotics.junction.Logger.start();
+    }
+
+    @Override
+    public void robotPeriodic() {
+        CommandScheduler.getInstance().run();
+    }
+
     // Disabled
 
     @Override
     public void disabledInit() {
+        Logger.warn("--- Disabled ---");
+
         subsystems.forEach(SubsystemIF::onDisabledInit);
     }
 
@@ -113,9 +101,11 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
+        Logger.info("--- Autonomous Initialized ---");
+
         subsystems.forEach(SubsystemIF::onAutonomousInit);
 
-        Command autoCommmand = autonomous.getSelectedAuto();
+        Command autoCommmand = Autonomous.getInstance().getSelectedAuto();
         Logger.info("Running Auto: " + autoCommmand.getName());
 
         autoCommmand.schedule();
@@ -139,6 +129,8 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
+        Logger.info("--- TeleOp Initialized ---");
+
         subsystems.forEach(SubsystemIF::onTeleopInit);
     }
 
@@ -149,7 +141,9 @@ public class Robot extends TimedRobot {
 
     @Override
     public void testInit() {
-        oi.initializeSysId();
+        Logger.info("--- Test Initialized ---");
+
+        OI.getInstance().initializeSysId();
     }
 
     @Override
@@ -157,7 +151,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void testExit() {
-        oi.cleanUpSysId();
+        OI.getInstance().cleanUpSysId();
     }
 
     // Simulation
@@ -169,15 +163,4 @@ public class Robot extends TimedRobot {
 
     @Override
     public void simulationPeriodic() {}
-
-    // Util
-
-    <T> void disableWatchdog(T inst, Class<?> clazz) {
-        try {
-            var field = clazz.getDeclaredField("m_watchdog");
-            field.setAccessible(true);
-            field.set(inst, new FauxWatchdog());
-            Logger.info("Disabled {}'s watchdog!", inst.getClass());
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {}
-    }
 }

@@ -2,7 +2,6 @@ package org.tahomarobotics.robot.vision;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
@@ -89,10 +88,8 @@ public class VisionConstants {
 
     // Camera Configuration
 
-    @Logged
     public record CameraConfiguration(String name, Transform3d transform, StandardDeviationScaling stdDevScaling) {}
 
-    @Logged(strategy = Logged.Strategy.OPT_IN)
     public interface StandardDeviationScaling {
         Vector<N3> scaleStandardDeviations(Vector<N3> stdDevs, double distance, int targetCount);
 
