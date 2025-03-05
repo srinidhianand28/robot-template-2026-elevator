@@ -6,11 +6,15 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
-import edu.wpi.first.math.kinematics.*;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -28,7 +32,6 @@ import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.persistent.CalibrationData;
 import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
-import org.tahomarobotics.robot.util.swerve.SwerveDrivePoseEstimatorDiff;
 import org.tahomarobotics.robot.vision.AprilTagCamera;
 import org.tinylog.Logger;
 
@@ -80,7 +83,9 @@ public class Chassis extends SubsystemIF {
     // Models
 
     private final SwerveDriveKinematics kinematics;
-    private final SwerveDrivePoseEstimatorDiff poseEstimator;
+    private final SwerveDrivePoseEstimator poseEstimator, delayedPoseEstimator;
+
+    private final Timer delayedPoseUpdateTimer = new Timer();
 
     private final SwerveDriveLimiter accelerationLimiter;
 
@@ -110,10 +115,21 @@ public class Chassis extends SubsystemIF {
 
         lastModulePosition = getSwerveModulePositions();
 
-        poseEstimator = new SwerveDrivePoseEstimatorDiff(
+        poseEstimator = new SwerveDrivePoseEstimator(
             kinematics,
-            new SwerveDriveOdometry(kinematics, new Rotation2d(), getSwerveModulePositions(), new Pose2d()),
-            VecBuilder.fill(0.02, 0.02, 0.02) // TODO: Verify
+            new Rotation2d(),
+            getSwerveModulePositions(),
+            new Pose2d(),
+            VecBuilder.fill(0.02, 0.02, 0.02),
+            VecBuilder.fill(1, 1, 1)
+        );
+        delayedPoseEstimator = new SwerveDrivePoseEstimator(
+            kinematics,
+            new Rotation2d(),
+            getSwerveModulePositions(),
+            new Pose2d(),
+            VecBuilder.fill(0.02, 0.02, 0.02),
+            VecBuilder.fill(1, 1, 1)
         );
 
         accelerationLimiter = new SwerveDriveLimiter(getSwerveModuleStates());
@@ -183,10 +199,10 @@ public class Chassis extends SubsystemIF {
         }
     }
 
-    @AutoLogOutput(key = "Chassis/Odometry Pose")
-    public Pose2d getRawPose() {
-        synchronized (poseEstimator) {
-            return poseEstimator.getRawPose();
+    @AutoLogOutput(key = "Chassis/Delayed Odometry Pose")
+    public Pose2d getDelayedPose() {
+        synchronized (delayedPoseEstimator) {
+            return delayedPoseEstimator.getEstimatedPosition();
         }
     }
 
@@ -290,6 +306,8 @@ public class Chassis extends SubsystemIF {
         }
         LoggedStatusSignal[] statusSignals = statusSignals_.toArray(LoggedStatusSignal[]::new);
 
+        delayedPoseUpdateTimer.start();
+
         while (true) {
             // Wait for all signals to arrive
             LoggedStatusSignal.waitForAll(4 / RobotConfiguration.ODOMETRY_UPDATE_FREQUENCY, statusSignals);
@@ -332,6 +350,14 @@ public class Chassis extends SubsystemIF {
         lastModulePosition = Arrays.copyOf(positions, positions.length);
         synchronized (poseEstimator) {
             poseEstimator.update(heading, positions);
+        }
+
+        synchronized (delayedPoseEstimator) {
+            delayedPoseEstimator.update(heading, positions);
+            if (delayedPoseUpdateTimer.hasElapsed(ChassisConstants.ODOMETRY_EVAL_DELAY)) {
+                delayedPoseEstimator.resetPose(getPose());
+                delayedPoseUpdateTimer.restart();
+            }
         }
     }
 

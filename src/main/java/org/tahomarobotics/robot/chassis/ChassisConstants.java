@@ -18,6 +18,10 @@ import java.util.Objects;
 
 @SuppressWarnings("SuspiciousNameCombination")
 public class ChassisConstants {
+    // Debug
+
+    public static final double ODOMETRY_EVAL_DELAY = 5;
+
     // Physical
 
     /** Approximate width of the robot with bumpers. */
@@ -38,7 +42,7 @@ public class ChassisConstants {
     public static final double MASS = ROBOT_MASS + BATTERY_MASS + BUMPER_MASS;
 
     /** Approximate radius of the wheel in <strong>meters</strong> */
-    private static final double WHEEL_RADIUS = Units.inchesToMeters(3.95 / 2 - 0.1);
+    private static final double WHEEL_RADIUS = Units.inchesToMeters(3.95 / 2) * (4.45 / 4.58);
     /** Approximate circumference of the wheel in <strong>meters</strong> */
     private static final double WHEEL_CIRCUMFERENCE = 2 * Math.PI * WHEEL_RADIUS;
 
@@ -112,8 +116,8 @@ public class ChassisConstants {
         return new TalonFXConfiguration()
             .withSlot0(
                 new Slot0Configs()
-                    .withKP(0.15)
-                    .withKV(kV_DRIVE)
+                    .withKP(0.1)
+                    .withKV(0.124)
             ).withMotorOutput(
                 new MotorOutputConfigs()
                     .withNeutralMode(NeutralModeValue.Brake)
