@@ -31,7 +31,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisConstants;
-import org.tahomarobotics.robot.climber.Climber;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.indexer.Indexer;
@@ -113,18 +112,17 @@ public class SystemCheck {
     }
 
     // Run Climber
-    public static Command createClimberTestCommand(Climber climber) {
-        return Commands.race(
-            ensureNominal(
-                new Measurement("Climber Lead", climber::getLeadCurrent, .025, .15),
-                new Measurement("Climber Follow", climber::getFollowerCurrent, .025, .15)
-            ),
-            climber.runOnce(climber::deploy)
-                   .andThen(Commands.waitUntil(climber::isAtTargetPosition))
-                   .andThen(climber.runOnce(climber::stow))
-                   .andThen(Commands.waitUntil(climber::isAtTargetPosition))
-        );
-    }
+//    public static Command createClimberTestCommand(Climber climber) {
+//        return Commands.race(
+//            ensureNominal(
+//                new Measurement("Climber Lead", climber::getLeadCurrent, .025, .15),
+//                new Measurement("Climber Follow", climber::getFollowerCurrent, .025, .15)
+//            ),
+//            climber.runOnce(climber::deploy)
+//                   .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+//                   .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+//        );
+//    }
 
     // Elevator -> Stow to L3 -> Arm from 0 to PI -> Stow
     public static Command createWindmillTestCommand(Windmill windmill) {

@@ -29,11 +29,11 @@ import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
@@ -60,6 +60,7 @@ public class Climber extends SubsystemIF {
 
     private final TalonFX climberMotor = new TalonFX(RobotMap.CLIMBER_MOTOR);
     private final TalonFX climberFollower = new TalonFX(RobotMap.CLIMBER_FOLLOWER);
+    private final TalonFX climberRoller = new TalonFX(RobotMap.CLIMBER_ROLLER);
     private final VictorSPX ratchetSolenoid = new VictorSPX(RobotMap.CLIMBER_RATCHET_SOLENOID);
 
     // Status Signals
@@ -75,6 +76,8 @@ public class Climber extends SubsystemIF {
     private final MotionMagicVoltage positionControl = new MotionMagicVoltage(0);
 
     // State
+
+    private boolean coasting = false;
 
     @AutoLogOutput(key = "Climber/State")
     private ClimberState climbState = ClimberState.ZEROED;
@@ -98,12 +101,14 @@ public class Climber extends SubsystemIF {
             new LoggedStatusSignal("Climber Follower Position", climberFollower.getPosition()),
             new LoggedStatusSignal("Climber Motor Current", climberMotorCurrent),
             new LoggedStatusSignal("Climber Follower Current", climberFollowerCurrent),
+            new LoggedStatusSignal("Climber Roller Current", climberRoller.getSupplyCurrent()),
             new LoggedStatusSignal("Climber Motor Voltage", climberMotor.getMotorVoltage()),
-            new LoggedStatusSignal("Climber Follower Voltage", climberFollower.getMotorVoltage())
+            new LoggedStatusSignal("Climber Follower Voltage", climberFollower.getMotorVoltage()),
+            new LoggedStatusSignal("Climber Roller Voltage", climberRoller.getMotorVoltage())
         };
 
         LoggedStatusSignal.setUpdateFrequencyForAll(statusSignals, RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
-        ParentDevice.optimizeBusUtilizationForAll(climberMotor, climberFollower);
+        ParentDevice.optimizeBusUtilizationForAll(climberMotor, climberFollower, climberRoller);
     }
 
     public static Climber getInstance() {
@@ -114,14 +119,17 @@ public class Climber extends SubsystemIF {
     public Climber initialize() {
         new Trigger(() -> RobotState.isEnabled() && !RobotState.isTest())
             .onTrue(
-                ClimberCommands
-                    .createZeroCommand(this)
-                    .onlyIf(() -> climbState.equals(ClimberState.ZEROED))
+                runOnce(this::zeroPosition)
+                    .andThen(
+                        ClimberCommands
+                            .getClimberCommand()
+                    ).onlyIf(() -> climbState.equals(ClimberState.ZEROED))
             );
 
         // Debug
-        SmartDashboard.putData("Deploy Solenoid", Commands.runOnce(this::deploySolenoid));
-        SmartDashboard.putData("Disable Solenoid", Commands.runOnce(this::disableSolenoid));
+        SmartDashboard.putData("Disengage Solenoid", runOnce(this::disengageSolenoid));
+        SmartDashboard.putData("Engage Solenoid", runOnce(this::engageSolenoid));
+        SmartDashboard.putData("Toggle Coast Climber", runOnce(this::toggleCoast).ignoringDisable(true));
 
         return this;
     }
@@ -139,9 +147,17 @@ public class Climber extends SubsystemIF {
 
     // -- Climb Control --
 
+    public void wiggle() {
+        targetPosition -= 0.01;
+
+        Logger.info("WIGGLING");
+        climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(0));
+    }
+
     public void stow() {
         targetPosition = ClimberConstants.STOW_POSITION;
-        Logger.info("Climber stow");
+
+        Logger.info("Climber going to STOW");
         climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(0));
 
         climbState = ClimberState.STOWED;
@@ -149,7 +165,8 @@ public class Climber extends SubsystemIF {
 
     public void deploy() {
         targetPosition = ClimberConstants.DEPLOY_POSITION;
-        Logger.info("Climber deploy");
+
+        Logger.info("Climber going to DEPLOY");
         climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(0));
 
         climbState = ClimberState.DEPLOYED;
@@ -157,19 +174,31 @@ public class Climber extends SubsystemIF {
 
     public void climb() {
         targetPosition = ClimberConstants.CLIMB_POSITION;
-        Logger.info("Climber climb");
+
+        Logger.info("Climber going to CLIMB");
         climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(1));
 
         climbState = ClimberState.CLIMBED;
     }
 
-    public void deploySolenoid() {
+    public void disengageSolenoid() {
+        Logger.info("Disengaged solenoid...");
         ratchetSolenoid.set(VictorSPXControlMode.PercentOutput, ClimberConstants.RATCHET_SOLENOID_DEPLOY_PERCENTAGE);
     }
 
-    public void disableSolenoid() {
-        Logger.info("Disable solenoid");
+    public void engageSolenoid() {
+        Logger.info("Engaged solenoid...");
         ratchetSolenoid.set(VictorSPXControlMode.PercentOutput, 0);
+    }
+
+    public void runRollers() {
+        Logger.info("Running rollers...");
+        climberRoller.set(-Math.PI / 10d);
+    }
+
+    public void disableRollers() {
+        Logger.info("Disabling rollers...");
+        climberRoller.set(0);
     }
 
     public void disableClimberMotors() {
@@ -177,8 +206,19 @@ public class Climber extends SubsystemIF {
     }
 
     public void zeroPosition() {
-        climberMotor.setPosition(ClimberConstants.CLIMBER_ZERO_POSITION);
-        climberFollower.setPosition(ClimberConstants.CLIMBER_ZERO_POSITION);
+        climberMotor.setPosition(ClimberConstants.ZERO_POSITION);
+        climberFollower.setPosition(ClimberConstants.ZERO_POSITION);
+    }
+
+    public void toggleCoast() {
+        if (coasting) {
+            climberMotor.setNeutralMode(NeutralModeValue.Brake);
+            climberFollower.setNeutralMode(NeutralModeValue.Brake);
+        } else {
+            climberMotor.setNeutralMode(NeutralModeValue.Coast);
+            climberFollower.setNeutralMode(NeutralModeValue.Coast);
+        }
+        coasting = !coasting;
     }
 
     // -- Getters --

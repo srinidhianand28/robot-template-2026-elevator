@@ -22,42 +22,41 @@
 
 package org.tahomarobotics.robot.climber.commands;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import org.tahomarobotics.robot.climber.Climber;
-import org.tahomarobotics.robot.climber.ClimberConstants;
 import org.tahomarobotics.robot.windmill.Windmill;
+import org.tinylog.Logger;
 
 public class ClimberCommands {
     private static final Climber climber = Climber.getInstance();
-
-    public static Command createZeroCommand(Climber climber) {
-        return climber.runOnce(climber::zeroPosition)
-//                      .andThen(Commands.waitUntil(
-//                          () ->
-//                              Collector.getInstance().getTargetDeploymentState() == CollectorConstants.TargetDeploymentState.CORAL_COLLECT ||
-//                              Collector.getInstance().getTargetDeploymentState() == CollectorConstants.TargetDeploymentState.ALGAE_COLLECT))
-//                      .andThen(climber.runOnce(climber::stow))
-                      .onlyIf(() -> climber.getClimbState() == Climber.ClimberState.ZEROED);
-    }
 
     public static Command getClimberCommand() {
         return Commands.deferredProxy(
             () ->
                 switch (climber.getClimbState()) {
-                    case STOWED -> Commands.runOnce(climber::deploy)
-                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setArmPosition(0.29 + Units.degreesToRotations(15))))
+                    case STOWED -> Commands.runOnce(climber::disengageSolenoid)
+                                           .andThen(Commands.runOnce(climber::wiggle))
+                                           .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+                                           .andThen(Commands.runOnce(climber::deploy))
+                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setArmPosition(2 * Math.PI / 3)))
                                            .andThen(Commands.waitUntil(Windmill.getInstance()::isArmAtPosition))
-                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setElevatorHeight(0.005)));
+                                           .andThen(Commands.runOnce(() -> Windmill.getInstance().setElevatorHeight(0.005)))
+                                           .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+                                           .andThen(Commands.runOnce(climber::engageSolenoid));
                     case DEPLOYED -> Commands.runOnce(climber::climb)
-                                             .andThen(Commands.runOnce(climber::deploySolenoid))
+                                             .andThen(Commands.runOnce(() -> Windmill.getInstance().setArmPosition(Math.PI)))
+                                             .andThen(Commands.waitUntil(Windmill.getInstance()::isArmAtPosition))
                                              .andThen(Commands.waitUntil(climber::isAtTargetPosition))
                                              .andThen(Commands.runOnce(climber::disableClimberMotors))
-                                             .andThen(Commands.waitSeconds(ClimberConstants.RATCHET_SOLENOID_DEPLOY_TIME))
-                                             .andThen(Commands.runOnce(climber::disableSolenoid));
-                    case CLIMBED -> Commands.runOnce(climber::stow);
-                    case ZEROED -> Commands.none();
+                                             .andThen(Commands.runOnce(climber::engageSolenoid));
+                    case CLIMBED -> Commands.runOnce(() -> Logger.error("You got one shot to climb and you missed it."));
+                    case ZEROED -> Commands.runOnce(climber::disengageSolenoid)
+                                           .andThen(Commands.runOnce(climber::wiggle))
+                                           .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+                                           .andThen(Commands.runOnce(climber::stow))
+                                           .andThen(Commands.waitUntil(climber::isAtTargetPosition))
+                                           .andThen(Commands.runOnce(climber::engageSolenoid));
                 }
         );
     }

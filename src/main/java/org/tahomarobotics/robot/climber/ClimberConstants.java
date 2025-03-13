@@ -26,23 +26,21 @@ import com.ctre.phoenix6.configs.*;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.util.Units;
 
 public class ClimberConstants {
-    // TODO: 1 / 78
+    // TODO: 1 / 78; DONT FIX
     public static final double MOTOR_TO_CLIMBER_GEAR_RATIO = (8.0 / 72.0) * (18.0 / 72.0) * (16.0 / 48.0);
-    public static final double CLIMBER_ZERO_POSITION = 0.0;
 
-    public static final double STOW_POSITION = 0.308; // Needs to be changed to not interfere with collector or arm
-    public static final double DEPLOY_POSITION = 0.41;
-    public static final double CLIMB_POSITION = -0.0075 - Units.degreesToRotations(17.5); // Probably needs to be tuned with new climber
+    public static final double ZERO_POSITION = 0.0;
+    public static final double STOW_POSITION = 0.267333984375;
+    public static final double DEPLOY_POSITION = 0.267333984375;
+    public static final double CLIMB_POSITION = -0.12;
 
-    public static final double CLIMB_POSITION_TOLERANCE = 0.001;
+    public static final double CLIMB_POSITION_TOLERANCE = 0.005;
 
-    public static final double RATCHET_SOLENOID_DEPLOY_TIME = 1.0; // Probably should decrease
     public static final double RATCHET_SOLENOID_DEPLOY_PERCENTAGE = 1;
 
-    private static final double CLIMBER_MAX_VELOCITY = 0.125;
+    private static final double CLIMBER_MAX_VELOCITY = 0.375;
     private static final double CLIMBER_MAX_ACCELERATION = CLIMBER_MAX_VELOCITY * 4;
     private static final double CLIMBER_MAX_JERK = CLIMBER_MAX_ACCELERATION * 4;
 
@@ -51,6 +49,7 @@ public class ClimberConstants {
             new Slot0Configs() // Unladen
                                .withGravityType(GravityTypeValue.Arm_Cosine)
                                .withKP(29.236)
+                               .withKI(1)
                                .withKD(1.4369)
                                .withKS(0.11051)
                                .withKV(10.452)

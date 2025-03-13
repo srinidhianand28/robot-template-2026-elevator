@@ -39,6 +39,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import org.tahomarobotics.robot.auto.Autonomous;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.check.SystemCheck;
+import org.tahomarobotics.robot.climber.Climber;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.indexer.Indexer;
@@ -61,7 +62,7 @@ public class Robot extends LoggedRobot {
         Windmill.getInstance().initialize(),
         Indexer.getInstance().initialize(),
         Collector.getInstance().initialize(),
-//        Climber.getInstance().initialize(),
+        Climber.getInstance().initialize(),
         Grabber.getInstance().initialize(),
         LED.getInstance().initialize(),
         OI.getInstance().initialize()
