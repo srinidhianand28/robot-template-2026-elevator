@@ -176,6 +176,7 @@ public class Grabber extends SubsystemIF {
 
     public void transitionToDisabled() {
         if (isHoldingCoral()) { return; }
+        if (algaeCollectionTimer.isRunning() || coralCollectionTimer.isRunning()) { return; }
         setTargetState(GrabberState.DISABLED);
     }
 
@@ -199,6 +200,10 @@ public class Grabber extends SubsystemIF {
 
     public void transitionToScoring() {
         setTargetState(GrabberState.SCORING);
+        coralCollectionTimer.stop();
+        coralCollectionTimer.reset();
+        algaeCollectionTimer.stop();
+        algaeCollectionTimer.reset();
     }
 
     public void transitionToScoringL1() {
