@@ -90,9 +90,10 @@ public class Strait extends SequentialCommandGroup {
                     collector.collectorTransitionToDisabled();
                     collector.deploymentTransitionToStow();
                 }),
-                indexer.runOnce(indexer::transitionToDisabled),
-                grabber.runOnce(grabber::transitionToDisabled)
+                indexer.runOnce(indexer::transitionToDisabled)
             ),
+            WindmillMoveCommand.fromTo(L4, STOW).orElseThrow(),
+            Commands.runOnce(grabber::transitionToDisabled),
             Commands.runOnce(() -> Logger.info("Strait completed in {} seconds.", timer.get()))
         );
     }
