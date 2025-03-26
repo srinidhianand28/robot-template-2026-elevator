@@ -31,7 +31,9 @@ public class TrapezoidalMotionProfile extends MotionProfile {
 	public MotionProfile updateEndTime(double endTime) throws MotionProfileException {
 
 		// close enough
-		if (Math.abs(endTime - getEndTime()) < 1E-06)
+		if (Math.abs(endTime - getEndTime()) < 1E-06 ||
+			Math.abs(endTime - startTime) < 1E-06 ||
+			Math.abs(getEndTime() - startTime) < 1E-06)
 			return this;
 
 		double scale = (getEndTime() - startTime) / (endTime - startTime);
@@ -64,8 +66,8 @@ public class TrapezoidalMotionProfile extends MotionProfile {
 			end_velocity = max_velocity;
 		}
 
-		final double ta = Math.max(0, (max_velocity - start_velocity) / maxAcceleration);
-		final double td = Math.max(0, (max_velocity - end_velocity) / maxAcceleration);
+		final double ta = Math.max(0, (max_velocity - start_velocity) / (maxAcceleration + 1.0e-6));
+		final double td = Math.max(0, (max_velocity - end_velocity) / (maxAcceleration + 1.0e-6));
 		final double tv = Math.max(0, abs_distance > 0 ? ((abs_distance - 0.5*ta*(max_velocity + start_velocity) - 0.5*td*(max_velocity + end_velocity)) / max_velocity) : 0);
 
 		

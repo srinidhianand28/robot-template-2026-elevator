@@ -111,9 +111,9 @@ public class WindmillConstants {
 
     // Motion
 
-    public static final double ELEVATOR_MAX_VELOCITY = 2; // Meters / sec
-    public static final double ELEVATOR_MAX_ACCELERATION = ELEVATOR_MAX_VELOCITY * 4 * 2; // Meters / sec^2
-    public static final double ELEVATOR_MAX_JERK = ELEVATOR_MAX_ACCELERATION * 4.0; // Meters / sec^3
+    public static final double ELEVATOR_MAX_VELOCITY = 2.499; // Meters / sec
+    public static final double ELEVATOR_MAX_ACCELERATION = 24.99; // Meters / sec^2
+    public static final double ELEVATOR_MAX_JERK = 416.5; // Meters / sec^3
 
     // -- Arm --
 
@@ -135,9 +135,9 @@ public class WindmillConstants {
 
     // Motion
 
-    public static final double ARM_MAX_VELOCITY = Units.rotationsToRadians(4); // Radians / sec
-    public static final double ARM_MAX_ACCELERATION = ARM_MAX_VELOCITY * 4 * 4; // Radians / sec^2
-    public static final double ARM_MAX_JERK = ARM_MAX_ACCELERATION * 4; // Radians / sec^3
+    public static final double ARM_MAX_VELOCITY = 2.499 * Math.PI; // Radians / sec
+    public static final double ARM_MAX_ACCELERATION = 24.99 * Math.PI; // Radians / sec^2
+    public static final double ARM_MAX_JERK = 416.5 * Math.PI; // Radians / sec^3
 
     public static final double ARM_ALGAE_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 1.4;
 

@@ -27,6 +27,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import org.tahomarobotics.robot.windmill.Dynamics;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.WindmillConstants.TrajectoryState;
 import org.tahomarobotics.robot.windmill.WindmillState;
@@ -53,9 +54,10 @@ public class WindmillMoveCommand extends Command {
     // State
 
     private final Timer timer = new Timer();
-    List<double[]> data = new ArrayList<>();
 
     boolean broken = false;
+
+    private final Dynamics dynamics = new Dynamics();
 
     // Command
 
@@ -79,7 +81,7 @@ public class WindmillMoveCommand extends Command {
 
         windmill.setTargetState(fromTo.getSecond());
 
-        Logger.info("Running trajectory: '{}'", trajectory.name);
+        Logger.info("Running trajectory: '{}' ({} seconds)", trajectory.name, trajectory.getTotalTimeSeconds());
         timer.restart();
     }
 
@@ -89,22 +91,13 @@ public class WindmillMoveCommand extends Command {
 
         double time = timer.get();
         WindmillState state = trajectory.sample(time);
-        windmill.setState(state);
 
-        var current = windmill.getCurrentState();
+        Dynamics.Voltages ffVoltages = dynamics.inverseDynamics(state, 0.0, false);
 
-        data.add(new double[]{
-            time,
-            state.elevatorState().heightMeters(),
-            state.elevatorState().velocityMetersPerSecond(),
-            state.armState().angleRadians(),
-            state.armState().velocityRadiansPerSecond(),
+        windmill.setStateWithFeedForword(state, ffVoltages.elevatorVoltage(), ffVoltages.armVoltage());
 
-            current.elevatorState().heightMeters(),
-            current.elevatorState().velocityMetersPerSecond(),
-            current.armState().angleRadians(),
-            current.armState().velocityRadiansPerSecond()
-        });
+                                         var current = windmill.getCurrentState();
+        Dynamics.Voltages currentVoltages = windmill.getVoltages();
 
         if (DEBUG) {
             Logger.info(
@@ -123,20 +116,6 @@ public class WindmillMoveCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        if (!data.isEmpty()) {
-            double raw[] = new double[data.size() * data.get(0).length];
-            int i = 0;
-            for (var d : data) {
-                for (var r : d) {
-                    raw[i++] = r;
-                }
-            }
-            SmartDashboard.putNumberArray("WindmillMoveCommand", raw);
-        }
-        if (data.isEmpty()) {
-            Logger.error("trajectory was empty");
-        }
-
         Logger.info("Ran trajectory: '{}'", trajectory.name);
     }
 

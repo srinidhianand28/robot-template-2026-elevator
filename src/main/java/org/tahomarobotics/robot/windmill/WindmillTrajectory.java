@@ -32,7 +32,11 @@ import java.util.Optional;
 
 public class WindmillTrajectory {
 
-    protected record WindmillProfile(MotionProfile elev, MotionProfile arm) {}
+    protected record WindmillProfile(MotionProfile elev, MotionProfile arm) {
+        public double getEndTime() {
+            return Math.max(elev.getEndTime(), arm.getEndTime());
+        }
+    }
 
     public final String name;
     private final WindmillProfile[] profiles;
@@ -121,20 +125,23 @@ public class WindmillTrajectory {
             constraints.armMaxVel, constraints.armMaxAccel
         );
 
-        if (elev.getEndTime() > arm.getEndTime()) {
-            arm = arm.updateEndTime(elev.getEndTime());
-        } else {
-            elev = elev.updateEndTime(arm.getEndTime());
+        if (elev.getEndTime() > 1e-6 && arm.getEndTime() > 1e-6) {
+            if (elev.getEndTime() > arm.getEndTime()) {
+                arm = arm.updateEndTime(elev.getEndTime());
+            } else {
+                elev = elev.updateEndTime(arm.getEndTime());
+            }
         }
 
         return new WindmillProfile(elev, arm);
     }
 
     public WindmillState sample(double time) {
-        time = Math.min(Math.max(time, profiles[0].elev.startTime), profiles[profiles.length - 1].elev.getEndTime());
+
+        time = Math.min(Math.max(time, getStartTime()), getTotalTimeSeconds());
 
         for (WindmillProfile profile : profiles) {
-            if (time <= profile.elev.getEndTime()) {
+            if (time <= profile.getEndTime()) {
                 profile.elev.getSetpoint(time, e);
                 profile.arm.getSetpoint(time, a);
                 break;
@@ -150,8 +157,12 @@ public class WindmillTrajectory {
         return sample(profiles[0].elev.startTime);
     }
 
+    public double getStartTime() {
+        return Math.min(profiles[0].elev.startTime, profiles[0].arm.startTime);
+    }
+
     public double getTotalTimeSeconds() {
-        return profiles[profiles.length - 1].elev.getEndTime() - profiles[0].elev.startTime;
+        return Math.max(profiles[profiles.length - 1].elev.getEndTime(), profiles[profiles.length - 1].arm.getEndTime());
     }
 
     public static Optional<WindmillTrajectory> loadTrajectories(Pair<WindmillConstants.TrajectoryState, WindmillConstants.TrajectoryState> fromTo) {

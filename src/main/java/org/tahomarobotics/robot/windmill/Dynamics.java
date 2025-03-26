@@ -27,81 +27,77 @@ import edu.wpi.first.math.util.Units;
 
 public class Dynamics {
 
-    private record State(double position, double velocity, double acceleration) {}
+    public record Voltages(double elevatorVoltage, double armVoltage) {}
 
-    private record Voltages(double elevatorVoltage, double armVoltage) {}
-
+    private static double lbsInchSqToKilogramMeterSq(double value) {
+        return Units.lbsToKilograms(Units.inchesToMeters(Units.inchesToMeters(value)));
+    }
     private static final double g = 9.80665;
-    private static final double me = Units.lbsToKilograms(7.9);
-    private static final double me_2nd = Units.lbsToKilograms(5.9);
-    private static final double ma = Units.lbsToKilograms(6.6);
-    private static final double lc = Units.inchesToMeters(14.838);
-    private static final double I = Units.lbsToKilograms(804.076) * Units.inchesToMeters(1.0) * Units.inchesToMeters(1.0);
-    private static final double coral = Units.lbsToKilograms(1);
+    private static final double me = Units.lbsToKilograms(17.603);
+    private static final double ma = Units.lbsToKilograms(5.947);
+    private static final double lc_empty = Units.inchesToMeters(12.241);
+    private static final double lc_coral = Units.inchesToMeters(15.655);
+    private static final double I_empty = lbsInchSqToKilogramMeterSq(606.25);
+    private static final double I_coral = lbsInchSqToKilogramMeterSq(844.14);
+    private static final double coral = Units.lbsToKilograms(0.913);
 
-    private double kElev = WindmillConstants.ELEVATOR_GEAR_REDUCTION * WindmillConstants.ELEVATOR_MAIN_PULLEY_RADIUS;
-    private double kArm = WindmillConstants.ARM_ROTOR_TO_ENCODER;
+    private DCMotor elevatorMotors = DCMotor.getKrakenX60Foc(2)
+                                            .withReduction(1 / WindmillConstants.ELEVATOR_GEAR_REDUCTION / WindmillConstants.ELEVATOR_MAIN_PULLEY_RADIUS);
 
-    private DCMotor elevatorMotors = DCMotor.getKrakenX60Foc(2);
-    private DCMotor armMotor = DCMotor.getKrakenX60Foc(1);
-
-    private static final double SECOND_STAGE_THRESHHOLD = Units.inchesToMeters(12);
+    private DCMotor armMotor = DCMotor.getKrakenX60Foc(1)
+                                      .withReduction(1 / WindmillConstants.ARM_ROTOR_TO_ENCODER /
+                                          WindmillConstants.ARM_BELT_REDUCTION);
 
     // ma, lc and I will change with coral
     private enum K {
-        EMPTY_1ST_STAGE(me + ma, ma * lc, ma * lc * lc + I),
-        EMPTY_2ND_STAGE(me + ma + me_2nd, ma * lc, ma * lc * lc + I),
-        CORAL_1ST_STAGE(me + ma + coral, ma * lc, ma * lc * lc + I),
-        CORAL_2ND_STAGE(me + ma + me_2nd + coral, ma * lc, ma * lc * lc + I);
+
+        EMPTY(me, ma, lc_empty, I_empty),
+        CORAL(me, ma + coral, lc_coral, I_coral);
 
         final double me_ma;
         final double ma_lc;
         final double ma_lc2_I;
 
-        K(double me_ma, double ma_lc, double ma_lc2_I) {
-            this.me_ma = me_ma;
-            this.ma_lc = ma_lc;
-            this.ma_lc2_I = ma_lc2_I;
+        K(double me, double ma, double lc, double I) {
+            this.me_ma = me + ma;
+            this.ma_lc = ma * lc;
+            this.ma_lc2_I = ma * lc * lc * I;
         }
     }
 
 
-    public Voltages inverseDynamics(State elevatorState, State armState, double robotAcceleration, boolean hasCoral) {
+    public Voltages inverseDynamics(WindmillState state, double robotAcceleration, boolean hasCoral) {
 
-        double sinTheta = Math.sin(armState.position);
-        double cosTheta = Math.cos(armState.position);
+        WindmillState.ElevatorState elevatorState = state.elevatorState();
+        WindmillState.ArmState armState = state.armState();
+
+        double sinTheta = Math.sin(armState.angleRadians());
+        double cosTheta = Math.cos(armState.angleRadians());
 
         // select constants base on elevatorState.position and if coral is attached
-        K k = elevatorState.position < SECOND_STAGE_THRESHHOLD ?
-            (hasCoral ? K.CORAL_1ST_STAGE : K.EMPTY_1ST_STAGE) : (hasCoral ? K.CORAL_2ND_STAGE : K.EMPTY_2ND_STAGE);
+        K k = hasCoral ? K.CORAL : K.EMPTY;
 
         // forces due to acceleration
         double elevatorForce =
-            k.me_ma * elevatorState.acceleration +
-            k.ma_lc * cosTheta * armState.acceleration;
+            k.me_ma * elevatorState.accelerationMetersPerSecondSquared() +
+            k.ma_lc * cosTheta * armState.accelerationRadiansPerSecondSquared();
         double armTorque =
             -k.ma_lc * sinTheta * robotAcceleration +
-            k.ma_lc * cosTheta * elevatorState.acceleration +
-            k.ma_lc2_I * armState.acceleration;
+            k.ma_lc * cosTheta * elevatorState.accelerationMetersPerSecondSquared() +
+            k.ma_lc2_I * armState.accelerationRadiansPerSecondSquared();
 
         // forces due to velocity
-        elevatorForce += -k.ma_lc * armState.velocity * armState.velocity * sinTheta;
+        elevatorForce += -k.ma_lc * armState.velocityRadiansPerSecond() * armState.velocityRadiansPerSecond() * sinTheta;
 
         // forces due to gravity
         elevatorForce += k.me_ma * g;
         armTorque += k.ma_lc * g * cosTheta;
 
-        // motor torques
-        double elevatorMotorTorque = elevatorForce * kElev;
-        double armMotorTorque = armTorque * kArm;
-
-        // motor velocities
-        double elevatorMotorVelocity = elevatorState.velocity / kElev;
-        double armMotorVelocity = armState.velocity / kArm;
-
+        // elevatorMotors has the pulley radius (m) integration so torque (Nm) and rotational velocity (rad/s)
+        // can be replaced with force (N) and linear velocity (m/s)
         Voltages voltages = new Voltages(
-            elevatorMotors.getVoltage(elevatorMotorTorque, elevatorMotorVelocity),
-            armMotor.getVoltage(armMotorTorque, armMotorVelocity)
+            elevatorMotors.getVoltage(elevatorForce, elevatorState.velocityMetersPerSecond()),
+            armMotor.getVoltage(armTorque, armState.velocityRadiansPerSecond())
         );
 
         return voltages;

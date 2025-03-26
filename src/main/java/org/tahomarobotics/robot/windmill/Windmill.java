@@ -24,8 +24,10 @@ package org.tahomarobotics.robot.windmill;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.controls.ControlRequest;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -90,8 +92,11 @@ public class Windmill extends SubsystemIF {
 
     // Control Requests
 
-    private final MotionMagicVoltage elevatorPositionControl = new MotionMagicVoltage(0);
-    private final MotionMagicVoltage armPositionControl = new MotionMagicVoltage(0);
+    private final MotionMagicVoltage elevatorMagicMotionPositionControl = new MotionMagicVoltage(0);
+    private final MotionMagicVoltage armMagicMotionPositionControl = new MotionMagicVoltage(0);
+
+    private final PositionVoltage elevatorPositionVoltageControl = new PositionVoltage(0);
+    private final PositionVoltage armPositionVoltageControl = new PositionVoltage(0);
 
     // State
 
@@ -110,6 +115,9 @@ public class Windmill extends SubsystemIF {
     // Trajectory
 
     public final WindmillMechanism windmillMechanism;
+    private double elevFeedForwardVoltage = 0d;
+    private double armFeedForwardVoltage = 0d;
+
     // -- Initialization --
 
     /**
@@ -304,6 +312,13 @@ public class Windmill extends SubsystemIF {
         return Units.rotationsToRadians(armMotor.getAcceleration().refresh().getValueAsDouble());
     }
 
+    public Dynamics.Voltages getVoltages() {
+        return new Dynamics.Voltages(
+            elevatorLeftMotor.getMotorVoltage().getValueAsDouble(),
+            armMotor.getMotorVoltage().getValueAsDouble()
+        );
+    }
+
     @AutoLogOutput(key = "Windmill/Arm/Target Position")
     private double getArmTarget() {
         return targetAngle;
@@ -336,35 +351,65 @@ public class Windmill extends SubsystemIF {
         this.targetTrajectoryState = targetState;
     }
 
+    public void setStateWithFeedForword(WindmillState state, double elevFFVoltage, double armFFVoltage) {
+        targetState = state;
+        windmillMechanism.update(state.elevatorState().heightMeters(), state.armState().angleRadians());
+
+        setElevatorHeight(state.elevatorState().heightMeters(), elevFFVoltage);
+        setArmPosition(state.armState().angleRadians(), armFFVoltage);
+
+        simElevVelocity = state.elevatorState().velocityMetersPerSecond() * 0.95;
+        simArmVelocity = state.armState().velocityRadiansPerSecond() * 0.95;
+    }
+
     public void setState(WindmillState state) {
         targetState = state;
         windmillMechanism.update(state.elevatorState().heightMeters(), state.armState().angleRadians());
 
         setElevatorHeight(state.elevatorState().heightMeters());
         setArmPosition(state.armState().angleRadians());
+
         simElevVelocity = state.elevatorState().velocityMetersPerSecond() * 0.95;
         simArmVelocity = state.armState().velocityRadiansPerSecond() * 0.95;
     }
 
-    public void setElevatorHeight(double height) {
+    public void setElevatorHeight(double position, double ffVoltage) {
+        this.elevFeedForwardVoltage = ffVoltage;
+        setElevatorHeight(position, elevatorPositionVoltageControl.withPosition(position).withFeedForward(ffVoltage));
+    }
+
+    public void setElevatorHeight(double position) {
+        setElevatorHeight(position, elevatorMagicMotionPositionControl.withPosition(position));
+    }
+
+    private void setElevatorHeight(double position, ControlRequest elevatorControlRequest) {
         if (!zeroed) {
             Logger.error("Cannot move elevator without calibration!");
             return;
         }
-        targetHeight = MathUtil.clamp(height, ELEVATOR_MIN_POSE, ELEVATOR_MAX_POSE);
+        targetHeight = MathUtil.clamp(position, ELEVATOR_MIN_POSE, ELEVATOR_MAX_POSE);
         elevatorRightMotor.setControl(new Follower(RobotMap.ELEVATOR_LEFT_MOTOR, true));
-        elevatorLeftMotor.setControl(elevatorPositionControl.withPosition(targetHeight));
-        simHeight = height;
+        elevatorLeftMotor.setControl(elevatorControlRequest);
+        simHeight = position;
+    }
+
+    public void setArmPosition(double position, double ffVoltage) {
+        this.armFeedForwardVoltage = ffVoltage;
+        setArmPosition(position, armPositionVoltageControl.withPosition(Units.radiansToRotations(position)).withFeedForward(ffVoltage));
     }
 
     public void setArmPosition(double position) {
+        setArmPosition(position, armMagicMotionPositionControl.withPosition(Units.radiansToRotations(position)));
+    }
+
+    private void setArmPosition(double position, ControlRequest armControlRequest) {
         if (!zeroed) {
             Logger.error("Cannot move arm without calibration!");
             return;
         }
 
         targetAngle = position;
-        armMotor.setControl(armPositionControl.withPosition(Units.radiansToRotations(targetAngle)));
+        armMotor.setControl(armControlRequest);
         simAngle = position;
     }
 
@@ -447,7 +492,8 @@ public class Windmill extends SubsystemIF {
     public void periodic() {
         LoggedStatusSignal.refreshAll(statusSignals);
         LoggedStatusSignal.log("Windmill/", statusSignals);
-
+        org.littletonrobotics.junction.Logger.recordOutput("Windmill/ElevFFVoltage", elevFeedForwardVoltage);
+        org.littletonrobotics.junction.Logger.recordOutput("Windmill/ArmFFVoltage", armFeedForwardVoltage);
     }
 
     // -- Overrides --

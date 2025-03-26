@@ -21,14 +21,14 @@ The elevator's kinetic energy comes from its vertical motion:
 $$T_{elevator}=\dfrac12(m_e\dot x^2+m_e\dot y^2)$$
 **Arm**  
 The arm's kinetic energy has two components (rotational and translation of the center of mass):
-$$T_{arm} = \dfrac12m_av_a^2 + \dfrac12I\theta^2 = \dfrac12m_a(v_{ax}^2+v_{ay}^2) + \dfrac12I\theta^2$$  
+$$T_{arm} = \dfrac12m_av_a^2 + \dfrac12I\dot\theta^2 = \dfrac12m_a(v_{ax}^2+v_{ay}^2) + \dfrac12I\dot\theta^2$$  
 Differentiating the position x and y gets the velocity of the center of mass:  
 $$v_{ax}=\dfrac{\mathrm{d}}{\mathrm{dt}}\left(x+l_ccos\theta\right)=\dot x-l_c\dot\theta sin\theta \quad v_{ay}=\dfrac{\mathrm{d}}{\mathrm{dt}}\left(y + l_csin\theta\right)=\dot y + l_c\dot\theta cos\theta$$  
 Factoring that component velocity back in and expanding:
-$$T_{arm} = \dfrac12m_a((\dot x-l_c\dot\theta sin\theta)^2+(\dot y + l_c\dot\theta cos\theta)^2) + \dfrac12I\theta^2$$
-$$T_{arm} = \dfrac12m_a(\dot x^2 -2\dot xl_c\dot\theta sin\theta +l_c^2\dot\theta^2 sin^2\theta+\dot y^2 + 2\dot yl_c\dot\theta cos\theta + l_c^2\dot\theta^2 cos^2\theta) + \dfrac12I\theta^2$$  
+$$T_{arm} = \dfrac12m_a((\dot x-l_c\dot\theta sin\theta)^2+(\dot y + l_c\dot\theta cos\theta)^2) + \dfrac12I\dot\theta^2$$
+$$T_{arm} = \dfrac12m_a(\dot x^2 -2\dot xl_c\dot\theta sin\theta +l_c^2\dot\theta^2 sin^2\theta+\dot y^2 + 2\dot yl_c\dot\theta cos\theta + l_c^2\dot\theta^2 cos^2\theta) + \dfrac12I\dot\theta^2$$  
 Then reducing terms with $cos^2\theta+sin^2\theta=1$:
-$$T_{arm} = \dfrac12m_a(\dot x^2 - 2\dot xl_c\dot\theta sin\theta + \dot y^2 + 2\dot yl_c\dot\theta cos\theta + l_c^2\dot\theta^2) + \dfrac12I\theta^2$$  
+$$T_{arm} = \dfrac12m_a(\dot x^2 - 2\dot xl_c\dot\theta sin\theta + \dot y^2 + 2\dot yl_c\dot\theta cos\theta + l_c^2\dot\theta^2) + \dfrac12I\dot\theta^2$$  
 **Total Kinetic Energy**  
 The total kinetic energy is:
 $$T=T_{base}+T_{elevator}+T_{arm}$$  
