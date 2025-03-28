@@ -29,7 +29,7 @@ import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.identity.Identity;
 
-public class WindmillConstants {
+public final class WindmillConstants {
 
     // -- Elevator --
 
@@ -40,7 +40,7 @@ public class WindmillConstants {
                      Units.inchesToMeters(15.257), Units.degreesToRadians(127.820)),  // ALGAE: B button
         LOW_DESCORE(0.254, Units.degreesToRadians(133.945),
                     Units.inchesToMeters(0.815), Units.degreesToRadians(127.742)),  // ALGAE: A button
-        CORAL_COLLECT(0.405, Units.degreesToRadians(267.809),
+        CORAL_COLLECT(0.430, Units.degreesToRadians(267.188),
                       Units.inchesToMeters(17.069), Units.degreesToRadians(267.809)),  // CORAL: RS button toggle
         STOW(Units.inchesToMeters(1.901), Units.degreesToRadians(89.913),
              Units.inchesToMeters(1.901), Units.degreesToRadians(89.913)),  // RS button toggle
@@ -48,6 +48,8 @@ public class WindmillConstants {
                       0.0214, Units.degreesToRadians(177.211)),  // ALGAE: RS button toggle
         ALGAE_PASSOFF(Units.inchesToMeters(42.344), Units.degreesToRadians(287.809),
                       Units.inchesToMeters(42.344), Units.degreesToRadians(287.809)),
+        ALGAE_PROCESSOR(0.567, Units.degreesToRadians(-61.566),
+                        0.567, Units.degreesToRadians(-61.566)),  // ALGAE: X button
         ALGAE_PRESCORE(Units.inchesToMeters(47.244), Units.degreesToRadians(20),
                        Units.inchesToMeters(47.244), Units.degreesToRadians(20)),  // ALGAE: Y button
         ALGAE_SCORE(Units.inchesToMeters(47.344), Units.degreesToRadians(89.913),
@@ -68,8 +70,8 @@ public class WindmillConstants {
         public final WindmillState state;
 
         TrajectoryState(double elevAEE, double armAEE, double elevSEE, double armSEE) {
-            this.elev = (RobotConfiguration.AEE_FEATURE) ? elevAEE : elevSEE;
-            this.arm = (RobotConfiguration.AEE_FEATURE) ? armAEE : armSEE;
+            this.elev = (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) ? elevAEE : elevSEE;
+            this.arm = (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) ? armAEE : armSEE;
             this.state = new WindmillState(
                 0,
                 new WindmillState.ElevatorState(elev, 0, 0),
@@ -83,9 +85,6 @@ public class WindmillConstants {
     public static final double LARGE_PULLBACK = Units.degreesToRadians(30.0);
     public static final double EXTRA_LARGE_PULLBACK = Units.degreesToRadians(40.0);
 
-    public static final double ALGAE_PULLBACK_ARM = Units.degreesToRadians(30);
-    public static final double ALGAE_PULLBACK_ELEVATOR = 0;
-
     // Gearing
     public static final double ELEVATOR_GEAR_REDUCTION;
 
@@ -97,10 +96,7 @@ public class WindmillConstants {
     public static final double ELEVATOR_MAX_POSE = 1.035 + Units.inchesToMeters(6); // Meters
     public static final double ELEVATOR_MIN_POSE = 0.01; // Meters
 
-    public static final double ELEVATOR_COLLECT_POSE = 0.43;
-    public static final double ELEVATOR_HIGH_POSE = 1.03; // Meters
     public static final double ELEVATOR_MID_POSE = 0.45; // Meters
-    public static final double ELEVATOR_LOW_POSE = 0.05; // Meters
 
     // Tolerances
 
@@ -109,8 +105,8 @@ public class WindmillConstants {
 
     // Motion
 
-    public static final double ELEVATOR_MAX_VELOCITY = 2.499; // Meters / sec
-    public static final double ELEVATOR_MAX_ACCELERATION = 24.99; // Meters / sec^2
+    public static final double ELEVATOR_MAX_VELOCITY = 2.0; // Meters / sec
+    public static final double ELEVATOR_MAX_ACCELERATION = 20.0; // Meters / sec^2
     public static final double ELEVATOR_MAX_JERK = 416.5; // Meters / sec^3
 
     // -- Arm --
@@ -122,9 +118,6 @@ public class WindmillConstants {
     // Poses
 
     public static final double ARM_CALIBRATION_POSE = 0.25; // Rotation (used for motor only)
-    public static final double ARM_COLLECT_POSE = Units.rotationsToRadians(0.75);
-    public static final double ARM_UPRIGHT_POSE = Units.rotationsToRadians(0.25);
-    public static final double ARM_TEST_POSE = Units.rotationsToRadians(0); // TODO: temporary
 
     // Tolerances
 
@@ -133,8 +126,8 @@ public class WindmillConstants {
 
     // Motion
 
-    public static final double ARM_MAX_VELOCITY = 2.499 * Math.PI; // Radians / sec
-    public static final double ARM_MAX_ACCELERATION = 24.99 * Math.PI; // Radians / sec^2
+    public static final double ARM_MAX_VELOCITY = 2.00 * Math.PI; // Radians / sec
+    public static final double ARM_MAX_ACCELERATION = 20.0 * Math.PI; // Radians / sec^2
     public static final double ARM_MAX_JERK = 416.5 * Math.PI; // Radians / sec^3
 
     public static final double ARM_ALGAE_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 1.4;

@@ -29,6 +29,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
+import org.tahomarobotics.robot.Robot;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
@@ -38,6 +39,7 @@ import org.tahomarobotics.robot.collector.CollectorCommands;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.grabber.GrabberCommands;
 import org.tahomarobotics.robot.grabber.GrabberConstants;
+import org.tahomarobotics.robot.util.game.GamePiece;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.WindmillConstants;
 import org.tahomarobotics.robot.windmill.WindmillState;
@@ -119,29 +121,62 @@ public class WindmillCommands {
     }
 
     public static Command createScoreToHighAlgaeDescoreCommand(Windmill windmill) {
-        return Commands.waitUntil(() -> !grabber.isScoring())
-                       .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.HIGH_DESCORE))
-                       .andThen(Commands.runOnce(() -> grabber.setTargetState((RobotConfiguration.AEE_FEATURE) ? GrabberConstants.GrabberState.ALGAE_COLLECTING : GrabberConstants.GrabberState.CORAL_COLLECTING)))
-                       .andThen(Commands.defer(() -> new DriveToPoseV4Command(
-                           -1,
-                           0,
-                           AutonomousConstants.getNearestReefCenterPosition(Chassis.getInstance().getPose().getTranslation())), Set.of(Chassis.getInstance())))
-                       .andThen(Commands.waitSeconds(2))
-                       .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.STOW))
-                       .andThen(Commands.runOnce(() -> grabber.setTargetState(GrabberConstants.GrabberState.DISABLED)));
+        if (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
+            return Commands.waitUntil(() -> !grabber.isScoring())
+                           .andThen(Commands.defer(
+                               () -> new DriveToPoseV4Command(
+                                   -1,
+                                   0,
+                                   AutonomousConstants.getNearestReefCenterPosition(Chassis.getInstance().getPose().getTranslation())
+                               ), Set.of(Chassis.getInstance())
+                           ).withTimeout(1))
+                           .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.HIGH_DESCORE))
+                           .andThen(Commands.runOnce(() -> grabber.setTargetState(
+                               GrabberConstants.GrabberState.ALGAE_COLLECTING)))
+                           .andThen(Commands.runOnce(() -> collector.setCollectionMode(GamePiece.ALGAE)));
+        } else {
+            return Commands.waitUntil(() -> !grabber.isScoring())
+                           .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.HIGH_DESCORE))
+                           .andThen(Commands.runOnce(() -> grabber.setTargetState(
+                               GrabberConstants.GrabberState.CORAL_COLLECTING)))
+                           .andThen(Commands.defer(
+                               () -> new DriveToPoseV4Command(
+                                   -1,
+                                   0,
+                                   AutonomousConstants.getNearestReefCenterPosition(Chassis.getInstance().getPose().getTranslation())
+                               ), Set.of(Chassis.getInstance())
+                           ))
+                           .andThen(Commands.waitSeconds(2))
+                           .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.STOW))
+                           .andThen(Commands.runOnce(() -> grabber.setTargetState(GrabberConstants.GrabberState.DISABLED)));
+        }
     }
 
     public static Command createScoreToLowAlgaeDescoreCommand(Windmill windmill) {
-        return Commands.waitUntil(() -> !grabber.isScoring())
-                       .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.LOW_DESCORE))
-                       .andThen(Commands.runOnce(() -> grabber.setTargetState((RobotConfiguration.AEE_FEATURE) ? GrabberConstants.GrabberState.ALGAE_COLLECTING : GrabberConstants.GrabberState.CORAL_COLLECTING)))
-                       .andThen(Commands.defer(() -> new DriveToPoseV4Command(
-                           -1,
-                           0,
-                           AutonomousConstants.getNearestReefCenterPosition(Chassis.getInstance().getPose().getTranslation())), Set.of(Chassis.getInstance())))
-                       .andThen(Commands.waitSeconds(2))
-                       .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.STOW))
-                       .andThen(Commands.runOnce(() -> grabber.setTargetState(GrabberConstants.GrabberState.DISABLED)));
+        if (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
+            return Commands.waitUntil(() -> !grabber.isScoring())
+                           .andThen(Commands.defer(
+                               () -> new DriveToPoseV4Command(
+                                   -1,
+                                   0,
+                                   AutonomousConstants.getNearestReefCenterPosition(Chassis.getInstance().getPose().getTranslation())
+                               ), Set.of(Chassis.getInstance())
+                           ).withTimeout(1))
+                           .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.LOW_DESCORE))
+                           .andThen(Commands.runOnce(() -> grabber.setTargetState(GrabberConstants.GrabberState.ALGAE_COLLECTING)))
+                           .andThen(Commands.runOnce(() -> collector.setCollectionMode(GamePiece.ALGAE)));
+        } else {
+            return Commands.waitUntil(() -> !grabber.isScoring())
+                           .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.LOW_DESCORE))
+                           .andThen(Commands.runOnce(() -> grabber.setTargetState(GrabberConstants.GrabberState.CORAL_COLLECTING)))
+                           .andThen(Commands.defer(() -> new DriveToPoseV4Command(
+                               -1,
+                               0,
+                               AutonomousConstants.getNearestReefCenterPosition(Chassis.getInstance().getPose().getTranslation())), Set.of(Chassis.getInstance())))
+                           .andThen(Commands.waitSeconds(2))
+                           .andThen(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.STOW))
+                           .andThen(Commands.runOnce(() -> grabber.setTargetState(GrabberConstants.GrabberState.DISABLED)));
+        }
     }
 
     public static Command createAlgaePassoffCommand(Windmill windmill) {

@@ -24,8 +24,10 @@ package org.tahomarobotics.robot.util;
 
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import org.tinylog.Logger;
@@ -137,6 +139,35 @@ public class RobustConfigurator {
 
         return tryConfigureCANcoder(deviceName, encoder, config);
     }
+
+    /**
+     * Attempts to configure a CANrange
+     * @param deviceName    Name of the device
+     * @param canRange      The range sensor
+     * @param configuration Configuration to apply
+     * @return the resulting status code
+     */
+    public static StatusCode tryConfigureCANrange(
+        String deviceName, CANrange canRange, CANrangeConfiguration configuration) {
+        return tryConfigure("CANrange '" + deviceName + "'", () -> canRange.getConfigurator().apply(configuration));
+    }
+
+    /**
+     * Attempts to modify the configuration of a CANrange
+     * @param deviceName   Name of the device
+     * @param canRange     The range sensor
+     * @param modification Modification to apply
+     * @return the resulting status code
+     */
+    public static StatusCode tryModifyCANrange(
+        String deviceName, CANrange canRange, Consumer<CANrangeConfiguration> modification) {
+        var config = new CANrangeConfiguration();
+        canRange.getConfigurator().refresh(config);
+        modification.accept(config);
+
+        return tryConfigureCANrange(deviceName, canRange, config);
+    }
+
 
     // Helper Methods
 

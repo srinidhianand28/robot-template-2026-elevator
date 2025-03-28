@@ -42,6 +42,7 @@ import org.tahomarobotics.robot.climber.Climber;
 import org.tahomarobotics.robot.climber.commands.ClimberCommands;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.collector.CollectorCommands;
+import org.tahomarobotics.robot.collector.CollectorConstants;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.grabber.GrabberCommands;
 import org.tahomarobotics.robot.indexer.Indexer;
@@ -69,6 +70,7 @@ public class OI extends SubsystemIF {
     private static final double TRANSLATIONAL_SENSITIVITY = 1.3;
 
     private static final double DEADBAND = 0.09;
+    private static final double TRIGGER_DEADBAND = 0.05;
 
     private static final double DOUBLE_PRESS_TIMEOUT = 0.35;
     private static final double ARM_UP_DISTANCE = AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR + Units.inchesToMeters(6);
@@ -194,9 +196,6 @@ public class OI extends SubsystemIF {
         // Left
         controller.leftStick().onTrue(collector.runOnce(collector::toggleCollectionMode).andThen(windmill.createSyncCollectionModeCommand()));
 
-        // Right - Deployment to algae score
-        controller.rightStick()
-                  .onTrue(CollectorCommands.createDeploymentAlgaeScoreCommand(collector).onlyIf(() -> collector.getCollectionMode() == GamePiece.ALGAE));
         // Right - Stow <-> Collect / Go to previous state if out of tolerance
         controller.rightStick().onTrue(
             Commands.defer(
@@ -251,7 +250,7 @@ public class OI extends SubsystemIF {
                   .onFalse(indexerScoringCommands.getSecond());
 
         Pair<Command, Command> grabberScoringCommands = GrabberCommands.createGrabberScoringCommands(grabber);
-        controller.rightTrigger().onTrue(grabberScoringCommands.getFirst())
+        controller.rightTrigger(TRIGGER_DEADBAND).onTrue(grabberScoringCommands.getFirst())
                   .onFalse(grabberScoringCommands.getSecond());
 
         // -- Start & Back --
@@ -280,8 +279,17 @@ public class OI extends SubsystemIF {
             ), Set.of(windmill)
         ));
 
-        // X - L1
-        controller.x().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.CORAL_COLLECT, WindmillConstants.TrajectoryState.L1));
+        // X - L1 / Algae Processor
+        controller.x().onTrue(Commands.defer(() -> {
+                    if (collector.getCollectionMode() == GamePiece.CORAL) {
+                        return windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.CORAL_COLLECT, WindmillConstants.TrajectoryState.L1);
+                    } else {
+                        return Commands.runOnce(() -> collector.deploymentForceStateTransition(CollectorConstants.TargetDeploymentState.CORAL_COLLECT))
+                                       .andThen(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.STOW, WindmillConstants.TrajectoryState.ALGAE_PROCESSOR));
+                    }
+                },
+            Set.of(windmill))
+        );
 
         // Y - L4
         controller.y().onTrue(Commands.deferredProxy(

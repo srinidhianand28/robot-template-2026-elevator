@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import org.tahomarobotics.robot.Robot;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
@@ -204,7 +205,7 @@ public class FivePiece extends SequentialCommandGroup {
                 return Commands.parallel(
                     Commands.runOnce(timer::restart),
                     // Drive to the coral station using the current translation of the chassis
-                    dtp.withTimeout(5).until(indexer::isBeanBakeTripped),
+                    dtp.withTimeout(5).until((RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) ? grabber::isInRange : indexer::isBeanBakeTripped),
                     dtp.runWhen(
                            () -> dtp.getDistanceFromStart() > ARM_DOWN_DISTANCE,
                            WindmillMoveCommand.fromTo(L4, CORAL_COLLECT).orElseThrow()

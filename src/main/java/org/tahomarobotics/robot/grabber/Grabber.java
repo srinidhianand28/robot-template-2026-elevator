@@ -24,10 +24,13 @@ package org.tahomarobotics.robot.grabber;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -56,19 +59,26 @@ public class Grabber extends SubsystemIF {
 
     // -- Member Variables --
 
+    private final Windmill windmill = Windmill.getInstance();
+
     // Hardware
 
     private final TalonFX motor;
+    private final CANrange canRange;
 
     // Status Signals
 
     private final StatusSignal<Current> current;
+    private final StatusSignal<Distance> distance;
+    private final StatusSignal<Boolean> detection;
 
     private final LoggedStatusSignal[] statusSignals;
 
     // Control requests
 
     private final MotionMagicVelocityVoltage velocityControl = new MotionMagicVelocityVoltage(0).withEnableFOC(
+        RobotConfiguration.RIO_PHOENIX_PRO);
+    private final MotionMagicVoltage positionControl = new MotionMagicVoltage(0).withEnableFOC(
         RobotConfiguration.RIO_PHOENIX_PRO);
     private final VoltageOut voltageControl = new VoltageOut(0);
 
@@ -91,18 +101,25 @@ public class Grabber extends SubsystemIF {
         // Create hardware
 
         motor = new TalonFX(RobotMap.END_EFFECTOR_MOTOR);
+        canRange = new CANrange(RobotMap.RANGE_SENSOR);
 
         // Configure hardware
 
         RobustConfigurator.tryConfigureTalonFX("Grabber Motor", motor, motorConfig);
+        RobustConfigurator.tryConfigureCANrange("Grabber Range Sensor", canRange, canRangeConfig);
 
         // Bind status signals
 
         current = motor.getSupplyCurrent();
+        distance = canRange.getDistance();
+        detection = canRange.getIsDetected();
 
         statusSignals = new LoggedStatusSignal[]{
+            new LoggedStatusSignal("Grabber Voltage", motor.getMotorVoltage()),
             new LoggedStatusSignal("Grabber Velocity", motor.getVelocity()),
-            new LoggedStatusSignal("Grabber Current", current)
+            new LoggedStatusSignal("Grabber Current", current),
+            new LoggedStatusSignal("CANrange Distance", distance),
+            new LoggedStatusSignal("CANrange In Range", detection)
         };
 
         LoggedStatusSignal.setUpdateFrequencyForAll(statusSignals, RobotConfiguration.MECHANISM_UPDATE_FREQUENCY);
@@ -119,12 +136,12 @@ public class Grabber extends SubsystemIF {
 
     public void setTargetState(GrabberState state) {
         this.state = state;
-        Logger.info(state);
 
         isUsingSupplier = state.usingSupplier;
 
         switch (state.type) {
             case NONE -> motor.stopMotor();
+            case POSITION -> motor.setControl(positionControl.withPosition(state.value));
             case VELOCITY -> motor.setControl(velocityControl.withVelocity(state.value));
             case VOLTAGE -> motor.setControl(voltageControl.withOutput(state.value));
         }
@@ -132,13 +149,19 @@ public class Grabber extends SubsystemIF {
 
     private void stateMachine() {
         if (state == GrabberState.CORAL_COLLECTING) {
-            if (indexer.isBeanBakeTripped() && !collectingCoral) {
-                collectingCoral = true;
+            if (RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
+                if (isInRange()) {
+                    transitionToCoralHolding();
+                }
+            } else {
+                if (indexer.isBeanBakeTripped() && !collectingCoral) {
+                    collectingCoral = true;
+                }
+                if (!indexer.isBeanBakeTripped() && collectingCoral) {
+                    coralCollectionTimer.start();
+                }
             }
-            if (!indexer.isBeanBakeTripped() && collectingCoral) {
-                coralCollectionTimer.start();
-            }
-        } else if (state == GrabberState.ALGAE_COLLECTING && RobotConfiguration.AEE_FEATURE) {
+        } else if (state == GrabberState.ALGAE_COLLECTING && RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
             boolean isTripped = getCurrent() > ALGAE_COLLECTION_CURRENT_THRESHOLD;
 
             if (isTripped && Collector.getInstance().getCollectionMode() != GamePiece.CORAL) {
@@ -154,7 +177,7 @@ public class Grabber extends SubsystemIF {
             }
         }
 
-        if (algaeCollectionTimer.hasElapsed(ALGAE_COLLECTION_DELAY) && RobotConfiguration.AEE_FEATURE) {
+        if (algaeCollectionTimer.hasElapsed(ALGAE_COLLECTION_DELAY) && RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
             transitionToAlgaeHolding();
 
             Windmill.getInstance().createTransitionCommand(((WindmillConstants.TrajectoryState.STOW))).schedule();
@@ -163,13 +186,15 @@ public class Grabber extends SubsystemIF {
             algaeCollectionTimer.reset();
         }
 
-        if (coralCollectionTimer.hasElapsed(CORAL_COLLECTION_DELAY)) {
-            transitionToCoralHolding();
-            indexer.transitionToDisabled();
+        if (!RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) {
+            if (coralCollectionTimer.hasElapsed(CORAL_COLLECTION_DELAY)) {
+                transitionToCoralHolding();
+                indexer.transitionToDisabled();
 
-            collectingCoral = false;
-            coralCollectionTimer.stop();
-            coralCollectionTimer.reset();
+                collectingCoral = false;
+                coralCollectionTimer.stop();
+                coralCollectionTimer.reset();
+            }
         }
     }
 
@@ -201,7 +226,17 @@ public class Grabber extends SubsystemIF {
     }
 
     public void transitionToScoring() {
-        setTargetState(GrabberState.SCORING);
+        setTargetState(GrabberState.AUTO_SCORING);
+
+        collectingCoral = false;
+        coralCollectionTimer.stop();
+        coralCollectionTimer.reset();
+        algaeCollectionTimer.stop();
+        algaeCollectionTimer.reset();
+    }
+
+    public void transitionToManualScoring() {
+        setTargetState(GrabberState.MANUAL_SCORING);
 
         collectingCoral = false;
         coralCollectionTimer.stop();
@@ -241,8 +276,19 @@ public class Grabber extends SubsystemIF {
     }
 
     public boolean isScoring() {
-        return state == GrabberState.SCORING;
+        return state == GrabberState.MANUAL_SCORING
+            || state == GrabberState.AUTO_SCORING
+            || state == GrabberState.L1_SCORING;
     }
+
+    public double getRange() {
+        return distance.getValueAsDouble();
+    }
+
+    public boolean isInRange() {
+        return detection.getValue();
+    }
+
     // -- Periodic --
 
     @Override

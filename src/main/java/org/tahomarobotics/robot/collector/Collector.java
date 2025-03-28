@@ -47,6 +47,7 @@ import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 import org.tinylog.Logger;
 
+import java.lang.annotation.Target;
 import java.util.List;
 
 import static edu.wpi.first.units.Units.Second;
@@ -182,9 +183,7 @@ public class Collector extends SubsystemIF {
     private void syncDeploymentControl() {
         // Ensure we transition to the correct mode.
         if (isDeploymentCollecting()) {
-            targetDeploymentState = collectionMode == GamePiece.CORAL ?
-                TargetDeploymentState.CORAL_COLLECT :
-                TargetDeploymentState.ALGAE_COLLECT;
+            targetDeploymentState = TargetDeploymentState.CORAL_COLLECT;
         }
 
         setDeploymentControl(targetDeploymentState);
@@ -208,13 +207,11 @@ public class Collector extends SubsystemIF {
     }
 
     public void deploymentTransitionToCollect() {
-        // Sets the target state depending on the collection mode;
-        // Is unnecessary due to syncDeploymentControl, but kept for readability.
-        setTargetDeploymentState(
-            collectionMode == GamePiece.CORAL ?
-                TargetDeploymentState.CORAL_COLLECT :
-                TargetDeploymentState.ALGAE_COLLECT
-        );
+        setTargetDeploymentState(TargetDeploymentState.CORAL_COLLECT);
+    }
+
+    public void deploymentForceStateTransition(TargetDeploymentState targetState) {
+        setDeploymentControl(targetState);
     }
 
     private void deploymentTransitionToEjecting() {
@@ -222,10 +219,6 @@ public class Collector extends SubsystemIF {
             // Overrides the control request while retaining the previous target state.
             setDeploymentControl(TargetDeploymentState.EJECT);
         }
-    }
-
-    public void deploymentTransitionToAlgaeScore() {
-        setTargetDeploymentState(TargetDeploymentState.ALGAE_SCORE);
     }
 
     private void deploymentCancelEjecting() {
@@ -239,7 +232,7 @@ public class Collector extends SubsystemIF {
     }
 
     public boolean isDeploymentCollecting() {
-        return targetDeploymentState == TargetDeploymentState.CORAL_COLLECT || targetDeploymentState == TargetDeploymentState.ALGAE_COLLECT;
+        return targetDeploymentState == TargetDeploymentState.CORAL_COLLECT;
     }
 
     public boolean isNotHoldingAlgae() {
@@ -297,7 +290,7 @@ public class Collector extends SubsystemIF {
 
     public void transitionToEjecting() {
         // If we eject while scoring algae keep the current position
-        if (targetDeploymentState != TargetDeploymentState.ALGAE_SCORE && targetDeploymentState != TargetDeploymentState.STOW) {
+        if (targetDeploymentState != TargetDeploymentState.STOW) {
             deploymentTransitionToEjecting();
         }
         collectorTransitionToEjecting();

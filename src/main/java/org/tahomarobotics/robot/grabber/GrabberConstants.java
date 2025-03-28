@@ -29,10 +29,10 @@ import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.util.identity.Identity;
 
 public class GrabberConstants {
-    public static final double CORAL_COLLECT_VELOCITY = -20;
+    public static final double CORAL_COLLECT_VELOCITY = RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR ? -48 : -20;
     public static final double ALGAE_COLLECT_VELOCITY = -10;
     public static final double SCORING_VELOCITY = 50;
-    public static final double CORAL_HOLD_VOLTAGE = RobotConfiguration.AEE_FEATURE ? 0 : -0.25;
+    public static final double CORAL_HOLD_VOLTAGE = RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR ? 0 : -0.25;
     public static final double ALGAE_HOLD_VOLTAGE = -1.35;
 
     public static final double CORAL_COLLECTION_DELAY = 0.05;
@@ -42,25 +42,19 @@ public class GrabberConstants {
 
     static {
         switch (Identity.robotID) {
-            case BEEF, BEARRACUDA -> GEAR_REDUCTION = (8d / 26d);
+            case BEEF, BEARRACUDA -> GEAR_REDUCTION = (1d / 9d);
             default -> GEAR_REDUCTION = (10d / 26d);
         }
     }
 
     public static double CORAL_COLLECTION_CURRENT_THRESHOLD;
-    public static double ALGAE_COLLECTION_CURRENT_THRESHOLD;
+    public static double ALGAE_COLLECTION_CURRENT_THRESHOLD = 60;
 
-    // TODO: Tune with Bearracuda
     static {
         CORAL_COLLECTION_CURRENT_THRESHOLD = switch (Identity.robotID) {
             case BEEF -> 15;
             case BEARRACUDA -> 16;
             default -> 20;
-        };
-        ALGAE_COLLECTION_CURRENT_THRESHOLD = switch (Identity.robotID) {
-            case BEEF -> 60;
-            case BEARRACUDA -> 20;
-            default -> 60;
         };
     }
 
@@ -72,7 +66,8 @@ public class GrabberConstants {
         CORAL_COLLECTING(MotionType.VELOCITY, CORAL_COLLECT_VELOCITY, false),
         ALGAE_HOLDING(MotionType.VOLTAGE, ALGAE_HOLD_VOLTAGE, false),
         ALGAE_COLLECTING(MotionType.VELOCITY, ALGAE_COLLECT_VELOCITY, false),
-        SCORING(MotionType.VELOCITY, SCORING_VELOCITY, false),
+        AUTO_SCORING(MotionType.VELOCITY, SCORING_VELOCITY, false),
+        MANUAL_SCORING(MotionType.VELOCITY, SCORING_VELOCITY, true),
         L1_SCORING(MotionType.VELOCITY, -SCORING_VELOCITY, true);
 
         public final MotionType type;
@@ -86,7 +81,7 @@ public class GrabberConstants {
         }
 
         public enum MotionType {
-            VELOCITY, VOLTAGE, NONE
+            POSITION, VELOCITY, VOLTAGE, NONE
         }
     }
 
@@ -103,9 +98,17 @@ public class GrabberConstants {
                              .withNeutralMode(NeutralModeValue.Brake)
                              .withInverted(InvertedValue.CounterClockwise_Positive))
         .withMotionMagic(new MotionMagicConfigs()
-                             .withMotionMagicCruiseVelocity(5)
+                             .withMotionMagicCruiseVelocity(40)
                              .withMotionMagicAcceleration(100)
                              .withMotionMagicJerk(5000))
         .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(1 / GEAR_REDUCTION))
         .withAudio(new AudioConfigs().withBeepOnBoot(true).withBeepOnConfig(true));
+
+    public static final CANrangeConfiguration canRangeConfig = new CANrangeConfiguration()
+        .withProximityParams(new ProximityParamsConfigs()
+                             .withProximityThreshold(0.17)     // Meters
+                             .withProximityHysteresis(0.003)) // Meters
+        .withFovParams(new FovParamsConfigs()
+                             .withFOVRangeX(6.75)   // Degrees
+                             .withFOVRangeY(6.75)); // Degrees
 }

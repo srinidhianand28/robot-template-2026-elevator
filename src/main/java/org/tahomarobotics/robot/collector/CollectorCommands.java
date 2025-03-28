@@ -25,6 +25,10 @@ package org.tahomarobotics.robot.collector;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import org.tahomarobotics.robot.windmill.Windmill;
+import org.tahomarobotics.robot.windmill.WindmillConstants;
+
+import java.util.Set;
 
 public class CollectorCommands {
     public static Command createZeroCommand(Collector collector) {
@@ -45,10 +49,6 @@ public class CollectorCommands {
                 collector.deploymentTransitionToStow();
             }
         });
-    }
-
-    public static Command createDeploymentAlgaeScoreCommand(Collector collector) {
-        return collector.runOnce(collector::deploymentTransitionToAlgaeScore);
     }
 
     public static Command createAutoCollectCommand(Collector collector) {
@@ -76,7 +76,11 @@ public class CollectorCommands {
 
     /** @return On true and on false commands. */
     public static Pair<Command, Command> createEjectCommands(Collector collector) {
-        Command onTrue = collector.runOnce(collector::transitionToEjecting);
+        Command onTrue = Commands.defer(() ->
+                                            collector.runOnce(
+                                                (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.ALGAE_PROCESSOR) ?
+                                                    collector::collectorTransitionToCollecting : collector::transitionToEjecting),
+                                        Set.of(collector));
         Command onFalse = collector.runOnce(collector::cancelEjecting);
 
         return Pair.of(onTrue, onFalse);

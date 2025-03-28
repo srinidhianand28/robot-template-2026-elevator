@@ -24,16 +24,15 @@ package org.tahomarobotics.robot.windmill.commands;
 
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.util.Units;
-import org.tahomarobotics.robot.windmill.WindmillConstants;
 import org.tahomarobotics.robot.windmill.WindmillState;
 import org.tahomarobotics.robot.windmill.WindmillTrajectory;
-import org.tinylog.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.tahomarobotics.robot.windmill.WindmillConstants.*;
+import static org.tahomarobotics.robot.RobotConfiguration.*;
 
 public class WindmillTrajectories {
 
@@ -45,25 +44,25 @@ public class WindmillTrajectories {
     }
 
     static {
-        WindmillState collectLift = createWindmillState(Units.inchesToMeters(30), Units.degreesToRadians(267.809));
-        WindmillState lowDescoreCollectPullback = createWindmillState(TrajectoryState.LOW_DESCORE.elev + ALGAE_PULLBACK_ELEVATOR, TrajectoryState.LOW_DESCORE.arm - ALGAE_PULLBACK_ARM);
-        WindmillState highDescoreCollectPullback = createWindmillState(TrajectoryState.HIGH_DESCORE.elev + ALGAE_PULLBACK_ELEVATOR, TrajectoryState.HIGH_DESCORE.arm - ALGAE_PULLBACK_ARM);
+        WindmillState collectLift = FEATURE_ALGAE_END_EFFECTOR ?
+            createWindmillState(TrajectoryState.CORAL_COLLECT.elev, Units.degreesToRadians(240.0)) :
+            createWindmillState(TrajectoryState.CORAL_COLLECT.elev + Units.inchesToMeters(12.931), TrajectoryState.CORAL_COLLECT.arm);
 
         // Algae
         create(TrajectoryState.CORAL_COLLECT, TrajectoryState.HIGH_DESCORE, new WindmillState[]{collectLift});
         create(TrajectoryState.CORAL_COLLECT, TrajectoryState.LOW_DESCORE, new WindmillState[]{collectLift});
         create(TrajectoryState.HIGH_DESCORE, TrajectoryState.CORAL_COLLECT, new WindmillState[]{collectLift});
         create(TrajectoryState.LOW_DESCORE, TrajectoryState.CORAL_COLLECT, new WindmillState[]{collectLift});
-        create(TrajectoryState.HIGH_DESCORE, SMALL_PULLBACK, TrajectoryState.LOW_DESCORE, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
-        create(TrajectoryState.LOW_DESCORE, SMALL_PULLBACK, TrajectoryState.HIGH_DESCORE, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.HIGH_DESCORE, SMALL_PULLBACK, TrajectoryState.LOW_DESCORE);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.LOW_DESCORE, SMALL_PULLBACK, TrajectoryState.HIGH_DESCORE);
 
         create(TrajectoryState.STOW, TrajectoryState.LOW_DESCORE);
         create(TrajectoryState.STOW, TrajectoryState.HIGH_DESCORE);
-        create(TrajectoryState.LOW_DESCORE, EXTRA_LARGE_PULLBACK, TrajectoryState.STOW, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
-        create(TrajectoryState.HIGH_DESCORE, EXTRA_LARGE_PULLBACK, TrajectoryState.STOW, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.LOW_DESCORE, EXTRA_LARGE_PULLBACK, TrajectoryState.STOW);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.HIGH_DESCORE, EXTRA_LARGE_PULLBACK, TrajectoryState.STOW);
 
-        create(TrajectoryState.HIGH_DESCORE, SMALL_PULLBACK, TrajectoryState.ALGAE_PRESCORE, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
-        create(TrajectoryState.LOW_DESCORE, SMALL_PULLBACK, TrajectoryState.ALGAE_PRESCORE, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.HIGH_DESCORE, SMALL_PULLBACK, TrajectoryState.ALGAE_PRESCORE);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.LOW_DESCORE, SMALL_PULLBACK, TrajectoryState.ALGAE_PRESCORE);
 
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.STOW, TrajectoryState.ALGAE_PRESCORE);
         create(TrajectoryState.STOW, TrajectoryState.ALGAE_COLLECT);
@@ -72,6 +71,8 @@ public class WindmillTrajectories {
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_PRESCORE, TrajectoryState.STOW);
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_COLLECT, TrajectoryState.STOW);
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_PRESCORE, TrajectoryState.ALGAE_SCORE);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.STOW, TrajectoryState.ALGAE_PROCESSOR);
+        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_PROCESSOR, TrajectoryState.STOW);
 
         // Algae - Coral
         create(TrajectoryState.L2, SMALL_PULLBACK, TrajectoryState.HIGH_DESCORE);
@@ -156,7 +157,7 @@ public class WindmillTrajectories {
         }
     }
 
-    private static void create(TrajectoryState start, double pullback, TrajectoryState end, WindmillTrajectory.WindmillConstraints constraints) {
+    private static void create(WindmillTrajectory.WindmillConstraints constraints, TrajectoryState start, double pullback, TrajectoryState end) {
         double elev = (start.elev + end.elev) / 2;
         double arm = (start.arm + end.arm) / 2 - pullback;
         var pos = new WindmillState(
@@ -164,10 +165,10 @@ public class WindmillTrajectories {
             new WindmillState.ElevatorState(elev, 0, 0),
             new WindmillState.ArmState(arm, 0, 0)
         );
-        create(start, end, new WindmillState[]{pos}, constraints);
+        create(constraints, start, end, new WindmillState[]{pos});
     }
 
-    private static void create(TrajectoryState start, TrajectoryState end, WindmillState midPositions[], WindmillTrajectory.WindmillConstraints constraints) {
+    private static void create(WindmillTrajectory.WindmillConstraints constraints, TrajectoryState start, TrajectoryState end, WindmillState[] midPositions) {
         WindmillState[] states = new WindmillState[2 + midPositions.length];
         states[0] = start.state;
         states[states.length - 1] = end.state;
