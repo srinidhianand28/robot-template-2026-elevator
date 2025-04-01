@@ -72,8 +72,10 @@ public class AutonomousConstants {
     /** Perpendicular distance from the center of the reef to the center of the chassis once aligned. */
     private static final double SCORE_DISTANCE_FROM_CENTER = Units.inchesToMeters(32.75) + ChassisConstants.BUMPER_WIDTH / 2 + Units.inchesToMeters(0.75);
     private static final double APPROACH_DISTANCE_FROM_CENTER = SCORE_DISTANCE_FROM_CENTER + Units.inchesToMeters(18);
+    private static final double ALGAE_SCORE_DISTANCE_FROM_CENTER = 1.2;
     public static final double APPROACH_DISTANCE_BLEND_FACTOR = Units.inchesToMeters(12);
     public static final double AUTO_SCORE_DISTANCE = Units.inchesToMeters(2);
+    public static final double AUTO_ALGAE_SCORE_DISTANCE = Units.inchesToMeters(2);
 
     private static final Translation2d BLUE_REEF_CENTER = new Translation2d(
         Units.inchesToMeters(144 + 93.5 / 2 - 14),
@@ -186,6 +188,22 @@ public class AutonomousConstants {
                                      .plus(alliance == DriverStation.Alliance.Blue ? Rotation2d.kZero : Rotation2d.k180deg);
 
         return new Pose2d(target, angle);
+    }
+
+    public static Pose2d getNearestBargeScorePosition(Translation2d currentTranslation) {
+        double centerX = VisionConstants.FIELD_LAYOUT.getFieldLength() / 2;
+
+        double targetXPos;
+        double angle;
+        if (currentTranslation.getX() < centerX) {
+            targetXPos = centerX - ALGAE_SCORE_DISTANCE_FROM_CENTER;
+            angle = 180;
+        } else {
+            targetXPos = centerX + ALGAE_SCORE_DISTANCE_FROM_CENTER;
+            angle = 0;
+        }
+
+        return new Pose2d(new Translation2d(targetXPos, currentTranslation.getY()), Rotation2d.fromDegrees(angle));
     }
 
     public static Objective getObjectiveForPole(int poleIndex, DriverStation.Alliance alliance) {

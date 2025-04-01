@@ -27,6 +27,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.util.identity.Identity;
+import org.tahomarobotics.robot.windmill.WindmillConstants;
 
 public class GrabberConstants {
     public static final double CORAL_COLLECT_VELOCITY = RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR ? -48 : -20;
@@ -44,7 +45,7 @@ public class GrabberConstants {
 
     public static final double GEAR_REDUCTION;
 
-    public static final double ALGAE_THROW_DELAY = 0.0625;
+    public static final double ALGAE_THROW_DELAY = (WindmillConstants.ARM_ALGAE_THROW_VELOCITY / (Math.PI)) * 0.05125; // Should be the fastest point of the algae throw trajectory
 
     static {
         switch (Identity.robotID) {

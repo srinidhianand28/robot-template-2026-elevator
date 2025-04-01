@@ -184,7 +184,7 @@ public class WindmillTrajectory {
             WindmillConstants.ARM_MAX_ACCELERATION - WindmillConstants.ARM_ALGAE_ACCELERATION_REDUCTION,
             WindmillConstants.ELEVATOR_MAX_ACCELERATION);
         public static final WindmillConstraints ALGAE_THROW_CONSTRAINTS = new WindmillConstraints(
-            WindmillConstants.ARM_MAX_VELOCITY,
+            WindmillConstants.ARM_ALGAE_THROW_VELOCITY,
             WindmillConstants.ELEVATOR_MAX_VELOCITY,
             WindmillConstants.ARM_MAX_ACCELERATION - WindmillConstants.ARM_ALGAE_THROW_ACCELERATION_REDUCTION,
             WindmillConstants.ELEVATOR_MAX_ACCELERATION);

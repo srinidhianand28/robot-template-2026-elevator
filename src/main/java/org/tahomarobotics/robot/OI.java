@@ -184,7 +184,7 @@ public class OI extends SubsystemIF {
         );
 
         controller.rightBumper().onTrue(Commands.deferredProxy(
-            () -> (collector.getCollectionMode() == GamePiece.ALGAE) ? WindmillCommands.createAlgaeThrowCommmand(windmill) : Commands.none()));
+            () -> (collector.getCollectionMode() == GamePiece.ALGAE) ? WindmillCommands.createAlgaeThrowCommmand(windmill) : Commands.none()).onlyWhile(controller.rightBumper()));
 
         // -- Joystick Press --
 

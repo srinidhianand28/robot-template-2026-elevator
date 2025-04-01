@@ -136,6 +136,7 @@ public final class WindmillConstants {
 
     public static final double ARM_ALGAE_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 1.4;
     public static final double ARM_ALGAE_THROW_ACCELERATION_REDUCTION = ARM_MAX_ACCELERATION / 3.25;
+    public static final double ARM_ALGAE_THROW_VELOCITY = 1.5 * Math.PI;
 
     // Constants
 
