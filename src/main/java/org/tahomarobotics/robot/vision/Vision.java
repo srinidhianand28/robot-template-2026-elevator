@@ -145,14 +145,10 @@ public class Vision extends SubsystemIF implements AutoCloseable {
     }
 
     public void isolate(int tag) {
-        org.tinylog.Logger.info("Isolating on tag: " + tag);
-
         aprilTagCameras.values().forEach(c -> c.isolate(tag));
     }
 
     public void globalize() {
-        org.tinylog.Logger.info("Globalized!");
-
         aprilTagCameras.values().forEach(AprilTagCamera::globalize);
     }
 

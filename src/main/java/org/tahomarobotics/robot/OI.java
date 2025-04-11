@@ -25,6 +25,8 @@ package org.tahomarobotics.robot;
 import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -36,6 +38,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV5Command;
+import org.tahomarobotics.robot.auto.commands.DriveToPoseV99Command;
+import org.tahomarobotics.robot.auto.commands.SlowJohnDownCommand;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisCommands;
 import org.tahomarobotics.robot.climber.Climber;
@@ -162,43 +166,7 @@ public class OI extends SubsystemIF {
 
         // Right - Auto-align to the closest pole
         controller.rightBumper().whileTrue(
-            Commands.deferredProxy(
-                        () -> {
-                            int nearestIndex = AutonomousConstants.getNearestReefPoleIndex(Chassis.getInstance().getPose().getTranslation());
-                            // Drive to Pose
-                            AutonomousConstants.Objective pole =
-                                AutonomousConstants.getObjectiveForPole(nearestIndex, AutonomousConstants.getAlliance())
-                                    .fudgeY(Chassis.getInstance().getAutoAligningOffset() + getPoleFudge(nearestIndex));
-                            var dtp = pole.driveToPoseV4Command();
-
-                            boolean isHighAlgae = (nearestIndex / 2) % 2 == 0;
-
-                            Command scoreToDescore = Commands.none();
-                            if ((windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L4
-                                 || windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L3
-                                 || windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L2)
-                                 || windmill.willDescore()) {
-                                if (isHighAlgae) {
-                                    scoreToDescore = WindmillCommands.createScoreToHighAlgaeDescoreCommand(windmill);
-                                } else {
-                                    scoreToDescore = WindmillCommands.createScoreToLowAlgaeDescoreCommand(windmill);
-                                }
-                            }
-
-                            Command stowToL4 = Commands.deferredProxy(() -> WindmillMoveCommand.fromTo(WindmillConstants.TrajectoryState.STOW, WindmillConstants.TrajectoryState.L4).orElse(Commands.runOnce(() -> Logger.error("Could not create automatic STOW to L4."))));
-
-                            return Commands.parallel(
-                                dtp.andThen(Commands.waitSeconds(0.75)).finallyDo(grabber::transitionToDisabled),
-                                dtp.runWhen(() -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() < STOW_TO_L4_DISTANCE,
-                                            stowToL4).onlyIf(() -> windmill.willMoveToL4OnAutoAlign() && windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.STOW),
-                                dtp.runWhen(
-                                    () -> dtp.getDistanceToWaypoint() < AutonomousConstants.AUTO_SCORE_DISTANCE,
-                                    Commands.waitUntil(() -> windmill.isAtTargetTrajectoryState() && windmill.getTargetTrajectoryState().shouldAutoScore()).andThen(grabber.runOnce(grabber::transitionToScoring))
-                                )
-                            ).andThen(scoreToDescore.onlyIf(windmill::willDescore));
-                        }
-                    )
-                    .onlyIf(() -> collector.getCollectionMode() == GamePiece.CORAL)
+            driveToClosestPole()
         );
 
         controller.rightBumper().onTrue(Commands.deferredProxy(
@@ -366,6 +334,66 @@ public class OI extends SubsystemIF {
     }
 
     // -- Helper Methods --
+
+    public Command driveToClosestPole() {
+        return Commands.deferredProxy(
+            () -> {
+                Translation2d translation = chassis.getPose().getTranslation();
+                int nearestIndex = AutonomousConstants.getNearestReefPoleIndex(translation);
+                // Drive to Pose
+                AutonomousConstants.Objective pole =
+                    AutonomousConstants.getObjectiveForPole(nearestIndex, AutonomousConstants.getAlliance())
+                                       .fudgeY(Chassis.getInstance().getAutoAligningOffset() + getPoleFudge(nearestIndex));
+
+                boolean isHighAlgae = (nearestIndex / 2) % 2 == 0;
+
+                Command scoreToDescore = Commands.none();
+                if ((windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L4
+                     || windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L3
+                     || windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L2)
+                    || windmill.willDescore()) {
+                    if (isHighAlgae) {
+                        scoreToDescore = WindmillCommands.createScoreToHighAlgaeDescoreCommand(windmill);
+                    } else {
+                        scoreToDescore = WindmillCommands.createScoreToLowAlgaeDescoreCommand(windmill);
+                    }
+                }
+
+                Command stowToL4 = Commands.deferredProxy(
+                    () -> WindmillMoveCommand.fromTo(WindmillConstants.TrajectoryState.STOW, WindmillConstants.TrajectoryState.L4)
+                                             .orElse(Commands.runOnce(() -> Logger.error("Could not create automatic STOW to L4."))));
+
+                var sjdc = new SlowJohnDownCommand(pole.scorePose().getTranslation().minus(translation).getAngle());
+                return Commands.sequence(
+                    sjdc.andThen(Commands.waitSeconds(0.1)).onlyIf(() -> sjdc.getVelocity() < 0),
+                    Commands.runOnce(() -> Logger.info("john is moving to the next")),
+                    Commands.defer(
+                        () -> {
+                            Translation2d t = chassis.getPose().getTranslation();
+                            var dtp = new DriveToPoseV99Command(
+                                pole.tag(), AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR,
+                                pole.approachPose().getTranslation().getDistance(t) < AutonomousConstants.NO_APPROACH_DISTANCE_FROM_SCORE ?
+                                    null : pole.approachPose(),
+                                pole.scorePose()
+                            );
+                            return Commands.parallel(
+                                dtp.andThen(Commands.waitSeconds(0.75)).finallyDo(grabber::transitionToDisabled),
+                                Commands.runOnce(() -> Logger.info("john movin to pole w {}s time", dtp.duration())),
+                                Commands.waitUntil(() -> dtp.distanceToEnd() < STOW_TO_L4_DISTANCE)
+                                        .andThen(stowToL4)
+                                        .onlyIf(
+                                            () -> windmill.willMoveToL4OnAutoAlign() && windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.STOW),
+                                Commands.waitUntil(() -> dtp.distanceToEnd() < AutonomousConstants.AUTO_SCORE_DISTANCE)
+                                        .andThen(Commands.waitUntil(
+                                                             () -> windmill.isAtTargetTrajectoryState() && windmill.getTargetTrajectoryState().shouldAutoScore())
+                                                         .andThen(grabber.runOnce(grabber::transitionToScoring)))
+                            );
+                        }, Set.of(chassis)
+                    )
+                ).andThen(scoreToDescore.onlyIf(windmill::willDescore));
+            }
+        ).onlyIf(() -> collector.getCollectionMode() == GamePiece.CORAL);
+    }
 
     @SuppressWarnings("SuspiciousNameCombination")
     public void setDefaultCommands() {

@@ -93,6 +93,7 @@ public class Chassis extends SubsystemIF {
 
     @AutoLogOutput(key = "Chassis/Target Speeds")
     private ChassisSpeeds targetSpeeds = new ChassisSpeeds();
+    private ChassisSpeeds targetFieldSpeeds = new ChassisSpeeds();
 
     private Rotation2d heading = new Rotation2d();
     private SwerveModulePosition[] lastModulePosition;
@@ -244,6 +245,11 @@ public class Chassis extends SubsystemIF {
         return kinematics.toChassisSpeeds(getSwerveModuleStates());
     }
 
+    @AutoLogOutput(key = "Chassis/Target Field Chassis Speeds")
+    public ChassisSpeeds getTargetFieldChassisSpeeds() {
+        return targetFieldSpeeds;
+    }
+
     @AutoLogOutput(key = "Chassis/Field Chassis Speeds")
     public ChassisSpeeds getFieldChassisSpeeds() {
         return ChassisSpeeds.fromRobotRelativeSpeeds(kinematics.toChassisSpeeds(getSwerveModuleStates()), getHeading());
@@ -265,7 +271,10 @@ public class Chassis extends SubsystemIF {
 
     public void drive(ChassisSpeeds velocity, boolean isFieldCentric) {
         if (isFieldCentric) {
+            targetFieldSpeeds = velocity;
             velocity = ChassisSpeeds.fromFieldRelativeSpeeds(velocity, getPose().getRotation());
+        } else {
+            targetFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(velocity, getPose().getRotation());
         }
         targetSpeeds = velocity;
     }

@@ -120,6 +120,10 @@ public class Autonomous extends SubsystemIF {
     }
 
     public void onAutoChange(Command command) {
+        if (command == null) {
+            return;
+        }
+
         Chassis chassis = Chassis.getInstance();
         DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red);
         Pose2d startingPose = switch (command.getName()) {
