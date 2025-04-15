@@ -81,6 +81,8 @@ public class OI extends SubsystemIF {
 
     private final Timer doublePressTimer = new Timer();
 
+    public boolean backScoring = false;
+
     // -- Subsystems --
 
     private final Indexer indexer = Indexer.getInstance();
@@ -247,13 +249,17 @@ public class OI extends SubsystemIF {
             // TODO: Debounce presses so that accidental double pressing doesnt mess stuff up
             controller.start().onTrue(ClimberCommands.getClimberCommand());
         }
+
+        // Back - Toggle Back Scoring
+        controller.back().onTrue(Commands.runOnce(this::toggleBackScoring));
+
         // -- ABXY --
 
         // A - L2 / Low Algae De-score
         controller.a().onTrue(Commands.defer(
             () -> windmill.createTransitionCommand(
                 collector.getCollectionMode() == GamePiece.CORAL ?
-                    WindmillConstants.TrajectoryState.L2 :
+                    backScoring ? WindmillConstants.TrajectoryState.BACK_L2 : WindmillConstants.TrajectoryState.L2 :
                     WindmillConstants.TrajectoryState.LOW_DESCORE
             ), Set.of(windmill)
         ));
@@ -262,7 +268,7 @@ public class OI extends SubsystemIF {
         controller.b().onTrue(Commands.defer(
             () -> windmill.createTransitionCommand(
                 collector.getCollectionMode() == GamePiece.CORAL ?
-                    WindmillConstants.TrajectoryState.L3 :
+                    backScoring ? WindmillConstants.TrajectoryState.BACK_L3 : WindmillConstants.TrajectoryState.L3 :
                     WindmillConstants.TrajectoryState.HIGH_DESCORE
             ), Set.of(windmill)
         ));
@@ -280,7 +286,9 @@ public class OI extends SubsystemIF {
         controller.y().onTrue(Commands.deferredProxy(
             () -> {
                 if (collector.getCollectionMode().equals(GamePiece.CORAL)) {
-                    if (!doublePressTimer.hasElapsed(DOUBLE_PRESS_TIME)) {
+                    if (backScoring) {
+                        return windmill.createTransitionCommand(WindmillConstants.TrajectoryState.BACK_L4);
+                    } else if (!doublePressTimer.hasElapsed(DOUBLE_PRESS_TIME)) {
                         return windmill.createTransitionCommand(WindmillConstants.TrajectoryState.L4);
                     } else {
                         doublePressTimer.restart();
@@ -342,6 +350,11 @@ public class OI extends SubsystemIF {
     }
 
     // -- Helper Methods --
+
+    public void toggleBackScoring() {
+        backScoring = !backScoring;
+        Logger.info("Set back scoring to " + backScoring);
+    }
 
     public Command driveToClosestPole() {
         return Commands.deferredProxy(

@@ -50,7 +50,10 @@ public final class WindmillConstants {
         L3(0.479, Units.degreesToRadians(125.551)),  // CORAL: B button
         L2(0.07375, Units.degreesToRadians(122.539)),  // CORAL: A button
         L1(0.6064453125, 4.1340782233518025),  // CORAL: X button
-        START(Units.inchesToMeters(0.468), Units.degreesToRadians(90.089));  // startup only
+        START(Units.inchesToMeters(0.468), Units.degreesToRadians(90.089)),
+        BACK_L4(1.15621, Units.degreesToRadians(44.648)), // CORAL: Y button when backwards
+        BACK_L3(0.49609, Units.degreesToRadians(46.41)), // CORAL: B button when backwards
+        BACK_L2(0.11865, Units.degreesToRadians(48.34)); // CORAL: A button when backwards;  // startup only
 
         public final double elev;
         public final double arm;
@@ -72,6 +75,10 @@ public final class WindmillConstants {
 
         public boolean shouldAutoScore() {
             return this == L2 || this == L3 || this == L4;
+        }
+
+        public boolean isBackScoring() {
+            return this == BACK_L2 || this == BACK_L3 || this == BACK_L4;
         }
     }
 

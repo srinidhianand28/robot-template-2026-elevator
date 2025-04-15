@@ -141,6 +141,61 @@ public class WindmillTrajectories {
         create(TrajectoryState.L2, TrajectoryState.STOW);
         create(TrajectoryState.L3, TrajectoryState.STOW);
         create(TrajectoryState.L4, TrajectoryState.STOW);
+
+        // Back Scoring
+        create(TrajectoryState.STOW, TrajectoryState.BACK_L2);
+        create(TrajectoryState.STOW, TrajectoryState.BACK_L3);
+        create(TrajectoryState.STOW, TrajectoryState.BACK_L4);
+
+        create(true, TrajectoryState.CORAL_COLLECT, TrajectoryState.BACK_L2);
+        create(true, TrajectoryState.BACK_L2, TrajectoryState.CORAL_COLLECT);
+
+        create(true, TrajectoryState.CORAL_COLLECT, TrajectoryState.BACK_L3);
+        create(true, TrajectoryState.BACK_L3, TrajectoryState.CORAL_COLLECT);
+
+        create(true, TrajectoryState.CORAL_COLLECT, TrajectoryState.BACK_L4);
+        create(true, TrajectoryState.BACK_L4, TrajectoryState.CORAL_COLLECT);
+
+        create(TrajectoryState.BACK_L2, -LARGE_PULLBACK, TrajectoryState.BACK_L3);
+        create(TrajectoryState.BACK_L2, -LARGE_PULLBACK, TrajectoryState.BACK_L4);
+        create(TrajectoryState.BACK_L3, -LARGE_PULLBACK, TrajectoryState.BACK_L2);
+        create(TrajectoryState.BACK_L3, -LARGE_PULLBACK, TrajectoryState.BACK_L4);
+        create(TrajectoryState.BACK_L4, -LARGE_PULLBACK, TrajectoryState.BACK_L2);
+        create(TrajectoryState.BACK_L4, -LARGE_PULLBACK, TrajectoryState.BACK_L3);
+
+        // Back Scoring to Front Scoring
+        create(TrajectoryState.BACK_L2, TrajectoryState.L2);
+        create(TrajectoryState.BACK_L2, TrajectoryState.L3);
+        create(TrajectoryState.BACK_L2, TrajectoryState.L4);
+
+        create(TrajectoryState.BACK_L3, TrajectoryState.L2);
+        create(TrajectoryState.BACK_L3, TrajectoryState.L3);
+        create(TrajectoryState.BACK_L3, TrajectoryState.L4);
+
+        create(TrajectoryState.BACK_L4, TrajectoryState.L2);
+        create(TrajectoryState.BACK_L4, TrajectoryState.L3);
+        create(TrajectoryState.BACK_L4, TrajectoryState.L4);
+
+        create(TrajectoryState.L2, TrajectoryState.BACK_L2);
+        create(TrajectoryState.L2, TrajectoryState.BACK_L3);
+        create(TrajectoryState.L2, TrajectoryState.BACK_L4);
+
+        create(TrajectoryState.L3, TrajectoryState.BACK_L2);
+        create(TrajectoryState.L3, TrajectoryState.BACK_L3);
+        create(TrajectoryState.L3, TrajectoryState.BACK_L4);
+
+        create(TrajectoryState.L4, TrajectoryState.BACK_L2);
+        create(TrajectoryState.L4, TrajectoryState.BACK_L3);
+        create(TrajectoryState.L4, TrajectoryState.BACK_L4);
+
+        // Back Scoring to L1
+        create(TrajectoryState.L1, TrajectoryState.BACK_L2);
+        create(TrajectoryState.L1, TrajectoryState.BACK_L3);
+        create(TrajectoryState.L1, TrajectoryState.BACK_L4);
+
+        create(TrajectoryState.BACK_L2, TrajectoryState.L1);
+        create(TrajectoryState.BACK_L3, TrajectoryState.L1);
+        create(TrajectoryState.BACK_L4, TrajectoryState.L1);
     }
 
     private static WindmillState createWindmillState(double elev, double arm) {
@@ -153,7 +208,7 @@ public class WindmillTrajectories {
 
     private static void create(TrajectoryState start, double pullback, TrajectoryState end) {
         double elev = (start.elev + end.elev) / 2;
-        double arm = (start.arm + end.arm) / 2 - pullback;
+        double arm = (start.arm + end.arm) / 2 -pullback;
         var pos = new WindmillState(
             0,
             new WindmillState.ElevatorState(elev, 0, 0),
@@ -182,7 +237,7 @@ public class WindmillTrajectories {
 
     private static void create(WindmillTrajectory.WindmillConstraints constraints, TrajectoryState start, double pullback, TrajectoryState end) {
         double elev = (start.elev + end.elev) / 2;
-        double arm = (start.arm + end.arm) / 2 - pullback;
+        double arm = (start.arm + end.arm) / 2 -pullback;
         var pos = new WindmillState(
             0,
             new WindmillState.ElevatorState(elev, 0, 0),
@@ -208,6 +263,7 @@ public class WindmillTrajectories {
     private static void create(TrajectoryState... trajectoryStates) {
         create(false, trajectoryStates);
     }
+
     private static void create(boolean reverse, TrajectoryState... trajectoryStates) {
         TrajectoryState start = trajectoryStates[0];
         TrajectoryState end = trajectoryStates[trajectoryStates.length - 1];

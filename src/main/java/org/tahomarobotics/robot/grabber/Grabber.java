@@ -226,6 +226,10 @@ public class Grabber extends SubsystemIF {
         algaeCollectionTimer.reset();
     }
 
+    public void transitionToBackScoring() {
+        setTargetState(GrabberState.BACK_SCORING);
+    }
+
     public void transitionToScoringL1() {
         setTargetState(GrabberState.L1_SCORING);
     }

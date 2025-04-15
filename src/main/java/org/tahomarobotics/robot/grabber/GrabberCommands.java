@@ -25,6 +25,7 @@ package org.tahomarobotics.robot.grabber;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import org.tahomarobotics.robot.OI;
 import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.util.game.GamePiece;
 import org.tahomarobotics.robot.windmill.Windmill;
@@ -35,7 +36,7 @@ import java.util.Set;
 public class GrabberCommands {
     public static Pair<Command, Command> createGrabberCommands(Grabber grabber) {
         Command onTrue = Commands.defer(
-            () -> (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L1) ?
+            () -> (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L1 || Windmill.getInstance().getTargetTrajectoryState().isBackScoring()) ?
                 Commands.runOnce(grabber::transitionToPullingL1) :
                 Collector.getInstance().getCollectionMode().equals(GamePiece.CORAL) ?
                     Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.FEEDER_COLLECT ?
@@ -52,7 +53,11 @@ public class GrabberCommands {
     public static Pair<Command, Command> createGrabberScoringCommands(Grabber grabber) {
         Command onTrue = Commands.defer(
             () -> (Windmill.getInstance().getTargetTrajectoryState() == WindmillConstants.TrajectoryState.L1) ?
-                Commands.runOnce(grabber::transitionToScoringL1) : Commands.runOnce(grabber::transitionToScoring), Set.of(grabber)
+                Commands.runOnce(grabber::transitionToScoringL1) :
+                OI.getInstance().backScoring && Collector.getInstance().getCollectionMode() == GamePiece.CORAL ?
+                    Commands.runOnce(grabber::transitionToBackScoring) :
+                    Commands.runOnce(grabber::transitionToScoring),
+            Set.of(grabber)
         );
         Command onFalse = grabber.runOnce(grabber::transitionToDisabled).onlyIf(() -> !grabber.coralCollectionTimer.isRunning());
 
