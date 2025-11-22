@@ -303,11 +303,13 @@ public class OI extends SubsystemIF {
                         }, Set.of(windmill)));
                     }
                 } else {
-                    if (windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.ALGAE_PRESCORE) {
+                    if (windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.ALGAE_PRESCORE || windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.ALGAE_SCORE) {
+                        if (windmill.getTargetTrajectoryState() == WindmillConstants.TrajectoryState.ALGAE_SCORE) {
+                            collector.setCollectionMode(GamePiece.CORAL);
+                        }
                         return windmill.createTransitionCommand(WindmillConstants.TrajectoryState.STOW);
                     }
-                    return Commands.runOnce(() -> collector.deploymentForceStateTransition(CollectorConstants.TargetDeploymentState.CORAL_COLLECT))
-                                   .alongWith(windmill.createTransitionCommand(WindmillConstants.TrajectoryState.ALGAE_PRESCORE));
+                    return windmill.createTransitionCommand(WindmillConstants.TrajectoryState.ALGAE_PRESCORE);
                 }
             }
         ));
@@ -347,6 +349,8 @@ public class OI extends SubsystemIF {
                     .andThen(Commands.waitUntil(windmill::isArmAtPosition))
                     .andThen(Commands.runOnce(() -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_MIN_POSE)))
         );
+
+        lessImportantController.b().onTrue(Commands.runOnce(this::toggleBackScoring));
     }
 
     // -- Helper Methods --

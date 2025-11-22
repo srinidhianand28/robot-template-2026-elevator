@@ -69,6 +69,7 @@ public class AutonomousConstants {
     public static final TrapezoidProfile.Constraints ROTATION_ALIGNMENT_CONSTRAINTS = new TrapezoidProfile.Constraints(2 * Math.PI, 4 * Math.PI);
     // TODO: OSCILLATIONS
     public static final double ROTATION_ALIGNMENT_KP = 5, ROTATION_ALIGNMENT_KI = 0, ROTATION_ALIGNMENT_KD = 0.5;
+    public static final double CORAL_DETECTION_ROTATION_ALIGNMENT_KP = 5, CORAL_DETECTION_ROTATION_ALIGNMENT_KI = 0, CORAL_DETECTION_ROTATION_ALIGNMENT_KD = 0;
     public static final double ROTATION_ALIGNMENT_TOLERANCE = Units.degreesToRadians(0.25);
 
     /** Distance between the centers of the reef poles on the same side of the reef. */
@@ -77,7 +78,7 @@ public class AutonomousConstants {
     private static final double SCORE_DISTANCE_FROM_CENTER = Units.inchesToMeters(32.75) + ChassisConstants.BUMPER_WIDTH / 2 + Units.inchesToMeters(0.75);
     private static final double APPROACH_DISTANCE_FROM_CENTER = SCORE_DISTANCE_FROM_CENTER + Units.inchesToMeters(18);
     public static final double NO_APPROACH_DISTANCE_FROM_SCORE = Units.inchesToMeters(32);
-    private static final double ALGAE_SCORE_DISTANCE_FROM_CENTER = Units.inchesToMeters(72);
+    private static final double ALGAE_SCORE_DISTANCE_FROM_CENTER = Units.inchesToMeters(80);
     public static final double APPROACH_DISTANCE_BLEND_FACTOR = Units.inchesToMeters(12);
     public static final double AUTO_SCORE_DISTANCE = Units.inchesToMeters(3);
     public static final double AUTO_ALGAE_SCORE_DISTANCE = Units.inchesToMeters(2);
@@ -204,10 +205,10 @@ public class AutonomousConstants {
         double angle;
         if (currentTranslation.getX() < centerX) {
             targetXPos = centerX - ALGAE_SCORE_DISTANCE_FROM_CENTER;
-            angle = 0;
+            angle = 180;
         } else {
             targetXPos = centerX + ALGAE_SCORE_DISTANCE_FROM_CENTER;
-            angle = 180;
+            angle = 0;
         }
 
         return new Pose2d(new Translation2d(targetXPos, currentTranslation.getY()), Rotation2d.fromDegrees(angle));

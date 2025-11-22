@@ -25,6 +25,7 @@ package org.tahomarobotics.robot.vision;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.*;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.littletonrobotics.junction.Logger;
 import org.photonvision.PhotonUtils;
 import org.photonvision.simulation.VisionSystemSim;
@@ -83,7 +84,9 @@ public class Vision extends SubsystemIF implements AutoCloseable {
 
     // Initialization
 
-    private Vision() {}
+    private Vision() {
+        SmartDashboard.putBoolean("Filter Camera Estimates in Field?", true);
+    }
 
     public static Vision getInstance() {
         return INSTANCE;

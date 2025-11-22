@@ -78,6 +78,7 @@ public class Grabber extends SubsystemIF {
     @AutoLogOutput(key = "Grabber/State")
     private GrabberState state = GrabberState.DISABLED;
 
+    @AutoLogOutput(key = "Grabber/Passing Coral Through?")
     boolean collectingCoral = false;
     final Timer coralCollectionTimer = new Timer();
     final Timer algaeCollectionTimer = new Timer();
@@ -134,7 +135,7 @@ public class Grabber extends SubsystemIF {
 
     private void stateMachine() {
         if (state == GrabberState.CORAL_COLLECTING) {
-            if (Windmill.getInstance().isAtTargetTrajectoryState() && coralDetectionDebouncer.calculate(indexer.isBeanBakeTripped()) && !collectingCoral) {
+            if (coralDetectionDebouncer.calculate(indexer.isBeanBakeTripped()) && !collectingCoral) {
                 collectingCoral = true;
             }
             if (coralDetectionDebouncer2.calculate(!indexer.isBeanBakeTripped()) && collectingCoral) {

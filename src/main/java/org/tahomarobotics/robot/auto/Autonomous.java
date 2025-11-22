@@ -65,7 +65,7 @@ public class Autonomous extends SubsystemIF {
         scorePositions.put('J', () -> 0);
         scorePositions.put('K', () -> 0);
         scorePositions.put('L', () -> 0);
-        scorePositions.put('A', () -> Units.inchesToMeters(-1));
+        scorePositions.put('A', () -> 0);
         return new AssembledAuto(isLeft, scorePositions, alliance, "6-Piece");
     }
 

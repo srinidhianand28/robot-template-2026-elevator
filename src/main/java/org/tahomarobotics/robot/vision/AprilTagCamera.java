@@ -32,6 +32,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.numbers.N8;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
@@ -41,7 +42,6 @@ import org.photonvision.estimation.VisionEstimation;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
-import org.photonvision.struct.PhotonTrackedTargetSerde;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.photonvision.targeting.PnpResult;
@@ -104,8 +104,8 @@ public class AprilTagCamera implements AutoCloseable {
 
     // Camera
 
-    @AutoLogOutput(key = "Vision/{name}/Broken")
-    private final boolean broken;
+    @AutoLogOutput(key = "Vision/{name}/Is Missing Calibration?")
+    private final boolean missingCalibration;
 
     private final String name;
     protected CameraConfiguration configuration;
@@ -173,10 +173,10 @@ public class AprilTagCamera implements AutoCloseable {
 
         // Attempt to load calibration
         mountPositionCalibration = new CalibrationData<>(name + "Calibration", new double[6]);
-        broken = !mountPositionCalibration.isCalibrated();
+        missingCalibration = !mountPositionCalibration.isCalibrated();
 
-        if (broken) {
-            logger.error("BROKEN");
+        if (missingCalibration) {
+            logger.error("MISSING CALIBRATION");
         }
 
         loadConfiguration(name, scaling);
@@ -213,7 +213,7 @@ public class AprilTagCamera implements AutoCloseable {
      * Processes all unread valid vision updates into estimated robot poses.
      */
     public void processUnreadVisionUpdates() {
-        if (broken) { return; }
+        if (missingCalibration) { return; }
 
         camera.getAllUnreadResults()
               .forEach(result -> {
@@ -350,7 +350,7 @@ public class AprilTagCamera implements AutoCloseable {
 
             // Filter if the estimate was not in the field
 
-            if (notInField(robotPose)) {
+            if ( notInField(robotPose) && SmartDashboard.getBoolean("Filter Camera Estimates in Field?", true)) {
                 failedUpdates++;
                 return Optional.empty();
             }

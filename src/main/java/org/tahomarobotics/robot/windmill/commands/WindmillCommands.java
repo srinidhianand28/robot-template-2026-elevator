@@ -120,7 +120,7 @@ public class WindmillCommands {
     public static Command createAlgaeThrowCommand(Windmill windmill) {
         Command throwCommand = WindmillMoveCommand.fromTo(WindmillConstants.TrajectoryState.ALGAE_PRESCORE, WindmillConstants.TrajectoryState.ALGAE_SCORE)
                                                   .orElse(Commands.none())
-                                                  .alongWith(Commands.waitSeconds((WindmillConstants.ARM_ALGAE_THROW_VELOCITY / (Math.PI)) * GrabberConstants.ALGAE_THROW_DELAY).andThen(GrabberCommands.createGrabberScoringCommands(grabber).getFirst()));
+                                                  .alongWith(Commands.waitSeconds(GrabberConstants.ALGAE_THROW_DELAY).andThen(GrabberCommands.createGrabberScoringCommands(grabber).getFirst()));
         DriveToPoseV4Command dtp = new DriveToPoseV4Command(-1, 0, AutonomousConstants.getNearestBargeScorePosition(Chassis.getInstance().getPose().getTranslation()));
         return Commands.parallel(dtp,  dtp.runWhen(() -> dtp.getDistanceToWaypoint() < AutonomousConstants.AUTO_ALGAE_SCORE_DISTANCE, throwCommand));
     }

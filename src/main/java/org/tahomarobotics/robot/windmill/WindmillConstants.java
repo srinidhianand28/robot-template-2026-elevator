@@ -44,8 +44,8 @@ public final class WindmillConstants {
         ALGAE_COLLECT(0.0214, Units.degreesToRadians(177.211)),  // ALGAE: RS button toggle
         ALGAE_PASSOFF(Units.inchesToMeters(42.344), Units.degreesToRadians(-72.191)),
         ALGAE_PROCESSOR(0.567, Units.degreesToRadians(-61.566)),  // ALGAE: X button
-        ALGAE_PRESCORE(Units.inchesToMeters(39.244), Units.degreesToRadians(-60)),  // ALGAE: Y button
-        ALGAE_SCORE(Units.inchesToMeters(42.344), Units.degreesToRadians(0)),  // ALGAE: Y button
+        ALGAE_PRESCORE(Units.inchesToMeters(46.244), Units.degreesToRadians(0)),  // ALGAE: Y button
+        ALGAE_SCORE(Units.inchesToMeters(46.344), Units.degreesToRadians(89.913 - 25)),  // ALGAE: Y button
         L4(Units.inchesToMeters(42.344), Units.degreesToRadians(120.548)),  // CORAL: Y button
         L3(0.479, Units.degreesToRadians(125.551)),  // CORAL: B button
         L2(0.07375, Units.degreesToRadians(122.539)),  // CORAL: A button

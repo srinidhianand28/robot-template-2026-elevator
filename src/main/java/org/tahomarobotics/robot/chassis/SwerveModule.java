@@ -24,7 +24,7 @@ package org.tahomarobotics.robot.chassis;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.ParentDevice;
@@ -83,7 +83,7 @@ public class SwerveModule {
 
     private final VelocityVoltage driveMotorVelocity = new VelocityVoltage(0.0).withEnableFOC(
         RobotConfiguration.CANIVORE_PHOENIX_PRO);
-    private final PositionDutyCycle steerMotorPosition = new PositionDutyCycle(0.0).withEnableFOC(
+    private final PositionVoltage steerMotorPosition = new PositionVoltage(0.0).withEnableFOC(
         RobotConfiguration.CANIVORE_PHOENIX_PRO);
 
     // Initialization

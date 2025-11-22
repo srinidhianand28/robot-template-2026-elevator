@@ -45,7 +45,7 @@ public class ClimberCommands {
                                            Commands.runOnce(climber::deploy)
                                                .andThen(() -> Optional.ofNullable(CommandScheduler.getInstance().requiring(Windmill.getInstance())).ifPresent(Command::cancel))
                                                .andThen(Commands.runOnce(() -> Windmill.getInstance().setArmPosition(2 * Math.PI / 3)))
-                                           .andThen(Commands.waitUntil(Windmill.getInstance()::isArmAtPosition))
+                                           .andThen(Commands.waitUntil(Windmill.getInstance()::isArmAtPosition).withTimeout(0.5))
                                            .andThen(Commands.runOnce(() -> Windmill.getInstance().setElevatorHeight(0.005)));
 //                                           .andThen(Commands.waitUntil(climber::isAtTargetPosition))
 //                                           .andThen(Commands.runOnce(climber::engageSolenoid));

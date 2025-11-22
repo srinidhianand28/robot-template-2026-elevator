@@ -36,6 +36,7 @@ import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.util.BlendedPath;
@@ -250,6 +251,7 @@ public class DriveToPoseV99Command extends Command {
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vaalongerr", pathError.getX());
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/vcrosserr", pathError.getY());
         org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/velocityalongpath", getVelocityAlongPath());
+        org.littletonrobotics.junction.Logger.recordOutput("Autonomous/Drive To Pose/distanceToEnd", distanceToEnd());
 
         chassis.drive(new ChassisSpeeds(vx, vy, vr), true);
     }
@@ -292,6 +294,10 @@ public class DriveToPoseV99Command extends Command {
         if (profileCompleted) {
             if (atPosition() && isStopped()) {
                 Logger.info("Successful DriveToPose");
+                return true;
+            }
+            if (isStopped()) {
+                Logger.info("DriveToPose stopped because robot stopped");
                 return true;
             }
             if (timer.hasElapsed(profile.getEndTime() + timeout)) {

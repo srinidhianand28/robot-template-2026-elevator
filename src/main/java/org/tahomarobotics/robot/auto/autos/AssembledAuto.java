@@ -186,7 +186,7 @@ public class AssembledAuto extends SequentialCommandGroup {
                 Commands.runOnce(windmill::calibrate),
                 // Drive
                 dtp.runWhen(() -> dtp.distanceToEnd() <= FIRST_ARM_UP_DISTANCE, stowToL4),
-                dtp.runWhen(() -> dtp.distanceToEnd() <= SCORING_DISTANCE && shouldScore(), scoreGrabber)
+                dtp.runWhen(() -> (dtp.distanceToEnd() <= SCORING_DISTANCE || dtp.isFinished()) && shouldScore(), scoreGrabber)
             ))
             .andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())))
             .withTimeout(FIRST_SCORE_TIMEOUT)
@@ -243,7 +243,7 @@ public class AssembledAuto extends SequentialCommandGroup {
                                    (isLast ? WindmillMoveCommand.fromTo(CORAL_COLLECT, STOW).orElseThrow() : l4)
                                        .andThen(
                                            (isLast ? dtp.runWhen(() -> dtp.distanceToEnd() <= ARM_UP_DISTANCE, l4) : Commands.none()),
-                                           dtp.runWhen(() -> dtp.distanceToEnd() <= SCORING_DISTANCE && shouldScore(), scoreGrabber)
+                                           dtp.runWhen(() -> (dtp.distanceToEnd() <= SCORING_DISTANCE || dtp.isFinished()) && shouldScore(), scoreGrabber)
                                        ).onlyIf(() -> dtp.distanceToEnd() > ARM_UP_DISTANCE)
                                ) // Only move the arm and score the coral if it is safe to do so
                        ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())))
