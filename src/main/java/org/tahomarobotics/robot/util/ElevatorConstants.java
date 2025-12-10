@@ -20,10 +20,15 @@
  * THE SOFTWARE.
  */
 
-package org.tahomarobotics.robot;
+package org.tahomarobotics.robot.util;
 
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.units.measure.Distance;
 
-public final class RobotMap {
+import static edu.wpi.first.units.Units.Feet;
 
+public class ElevatorConstants {
+    public final static int  RIGHT_ELEVATOR_MOTOR = 2;
+    public final static int  LEFT_ELEVATOR_MOTOR = 1;
+    Distance Max_Height = Feet.of(10);
+     Distance Min_Height = Feet.of(1);
 }

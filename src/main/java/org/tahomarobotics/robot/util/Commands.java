@@ -20,10 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.tahomarobotics.robot;
+package org.tahomarobotics.robot.util;
 
-import edu.wpi.first.math.geometry.Translation2d;
-
-public final class RobotMap {
-
-}
+public class Commands {
+   }
