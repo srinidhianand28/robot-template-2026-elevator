@@ -40,13 +40,25 @@ public class ElevatorSubsystem extends SubsystemBase {
     private static final double GEAR_REDUCTION = (12.0 / 72.0) * (30.0 / 60.0);
     TalonFX right_elevator_motor = new TalonFX(RIGHT_ELEVATOR_MOTOR);
     TalonFX left_elevator_motor = new TalonFX(LEFT_ELEVATOR_MOTOR);
+    boolean isContinous = true;
     public ElevatorSubsystem() {}
+
+
     public void elevatorUp() {
-        if (getHeightFt()<9) {
+        if (getHeightFt()>9) {
             left_elevator_motor.setControl(new DutyCycleOut(0.5));
             right_elevator_motor.setControl(new DutyCycleOut(0.5));
         }
     }
+
+    public void ElevatorDown() {
+        if (getHeightFt() < 1) {
+            left_elevator_motor.setControl(new DutyCycleOut(-0.5));
+            right_elevator_motor.setControl(new DutyCycleOut(-0.5));
+        }
+    }
+
+
     public static ElevatorSubsystem getInstance() {
     return INSTANCE;
     }
@@ -58,9 +70,30 @@ public class ElevatorSubsystem extends SubsystemBase {
 
 
     public double getHeightFt() {
-        double rightPos = right_elevator_motor.getPosition().getValue();
-        double leftPos = left_elevator_motor.getPosition().getValue();
+        double rightPos = right_elevator_motor.getPosition().getValueAsDouble();
+        double leftPos = left_elevator_motor.getPosition().getValueAsDouble();
         return (rightPos + leftPos) / 2.0;
         // you can't return 2 things from one method so I am getting the average of the height of both the motors
+
     }
+
+
+    public void moveDownwardContinuously() {
+        if (isContinous) {
+            left_elevator_motor.setControl(new DutyCycleOut(-0.5));
+            right_elevator_motor.setControl(new DutyCycleOut(-0.5));
+        }
+    }
+
+    public void moveUpwardContinuously() {
+        if (isContinous) {
+            left_elevator_motor.setControl(new DutyCycleOut(0.5));
+            right_elevator_motor.setControl(new DutyCycleOut(0.5));
+        }
+    }
+
+    public void toggleMode() {
+        isContinous = !isContinous;
+    } // the boolean will get revresed
+
 }
