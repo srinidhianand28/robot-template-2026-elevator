@@ -24,24 +24,29 @@ package org.tahomarobotics.robot;
 
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 
 
 import edu.wpi.first.wpilibj.Encoder;
+import org.tahomarobotics.robot.util.AbstractSubsystem;
 
 import static edu.wpi.first.units.Units.Feet;
 
 import static org.tahomarobotics.robot.util.ElevatorConstants.LEFT_ELEVATOR_MOTOR;
 import static org.tahomarobotics.robot.util.ElevatorConstants.RIGHT_ELEVATOR_MOTOR;
 
-public class ElevatorSubsystem extends SubsystemBase {
+public class ElevatorSubsystem extends AbstractSubsystem {
     private static final ElevatorSubsystem INSTANCE = new ElevatorSubsystem();
     private static final double GEAR_REDUCTION = (12.0 / 72.0) * (30.0 / 60.0);
     TalonFX right_elevator_motor = new TalonFX(RIGHT_ELEVATOR_MOTOR);
     TalonFX left_elevator_motor = new TalonFX(LEFT_ELEVATOR_MOTOR);
     boolean isContinous = true;
     public ElevatorSubsystem() {}
+
+    @Override
+    public void subsystemPeriodic() {
+
+    }
 
 
     public void elevatorUp() {
@@ -94,6 +99,6 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     public void toggleMode() {
         isContinous = !isContinous;
-    } // the boolean will get revresed
+    } // the boolean will get reversed
 
 }
