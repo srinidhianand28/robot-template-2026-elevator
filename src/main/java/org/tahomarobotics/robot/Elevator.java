@@ -24,17 +24,29 @@ package org.tahomarobotics.robot;
 
 import edu.wpi.first.wpilibj2.command.Command;
 
-public class Elevator {
 
 
+  public class Elevator {
+
+      public class Elevator {
+          private final ElevatorSubsystem elevator;
+
+          public Elevator(ElevatorSubsystem elevator) {
+              this(new ElevatorSubsystem());
+          }
 
 
-    public Command goDown() {
-        return
-    }
+          public Command goDown() {
+              return elevator.runOnce(elevator::moveDownwardContinuously);
+          }
 
+          public Command goUp() {
+              return elevator.runOnce(elevator::moveUpwardContinuously);
+          }
 
+          public Command toggle() {
+              return elevator.runOnce(elevator::toggleMode);
+          }
 
-
-
-}
+      }
+  }

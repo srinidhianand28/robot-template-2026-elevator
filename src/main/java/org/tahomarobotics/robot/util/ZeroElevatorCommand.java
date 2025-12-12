@@ -22,5 +22,33 @@
 
 package org.tahomarobotics.robot.util;
 
-public class Commands {
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import org.tahomarobotics.robot.ElevatorSubsystem;
+
+import static org.tahomarobotics.robot.util.ElevatorConstants.ZERO_TIME;
+
+public class ZeroElevatorCommand extends Command {
+    private final ElevatorSubsystem elevator;
+    private final Timer timer=new Timer();
+
+    public ZeroElevatorCommand(ElevatorSubsystem elevator) {
+        this.elevator=elevator;
+        addRequirements(this.elevator);
+    }
+    @Override
+    public void initialize(){
+        timer.restart();
+        elevator.setZeroingVoltage();
+    }
+    @Override
+    public boolean isFinished() {
+    return timer.hasElapsed(ZERO_TIME);
+    }
+    @Override
+    public void end(boolean interrupted) {
+        elevator.left_elevator_motor.setVoltage(0);
+        elevator.right_elevator_motor.setVoltage(0);
+        elevator.zeroPosition();
+    }
    }

@@ -30,5 +30,8 @@ public class ElevatorConstants {
     public final static int  RIGHT_ELEVATOR_MOTOR = 2;
     public final static int  LEFT_ELEVATOR_MOTOR = 1;
     Distance Max_Height = Feet.of(10);
-     Distance Min_Height = Feet.of(1);
+    Distance Min_Height = Feet.of(1);
+    public final static int ZEROING_VOLTAGE=0;
+    public final static int ZERO_TIME=15;
+    public final static int ZERO_POSITION=0;
 }

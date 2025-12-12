@@ -23,29 +23,34 @@
 package org.tahomarobotics.robot;
 
 import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 
 
 import edu.wpi.first.wpilibj.Encoder;
+import org.littletonrobotics.junction.Logger;
 import org.tahomarobotics.robot.util.AbstractSubsystem;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Feet;
-
-import static org.tahomarobotics.robot.util.ElevatorConstants.LEFT_ELEVATOR_MOTOR;
-import static org.tahomarobotics.robot.util.ElevatorConstants.RIGHT_ELEVATOR_MOTOR;
+import static org.tahomarobotics.robot.util.ElevatorConstants.*;
 
 public class ElevatorSubsystem extends AbstractSubsystem {
     private static final ElevatorSubsystem INSTANCE = new ElevatorSubsystem();
     private static final double GEAR_REDUCTION = (12.0 / 72.0) * (30.0 / 60.0);
-    TalonFX right_elevator_motor = new TalonFX(RIGHT_ELEVATOR_MOTOR);
-    TalonFX left_elevator_motor = new TalonFX(LEFT_ELEVATOR_MOTOR);
-    boolean isContinous = true;
+    public TalonFX right_elevator_motor = new TalonFX(RIGHT_ELEVATOR_MOTOR);
+    public TalonFX left_elevator_motor = new TalonFX(LEFT_ELEVATOR_MOTOR);
+    boolean isContinuous = true;
     public ElevatorSubsystem() {}
 
+    ElevatorState state=ElevatorState.STOWED;
+    PositionVoltage posControl=new PositionVoltage(0);
     @Override
     public void subsystemPeriodic() {
-
+        Logger.recordOutput("ClimberState", state);
+        Logger.recordOutput("LeftPosition",left_elevator_motor.getPosition().getValue());
+        Logger.recordOutput("RightPosition",right_elevator_motor.getPosition().getValue());
     }
 
 
@@ -72,7 +77,11 @@ public class ElevatorSubsystem extends AbstractSubsystem {
         private final Encoder encoder = new Encoder(0, 1);
         // an encoder is a sensor that will allow us to see its height
 
-
+    public void transitionToStowed() {
+    left_elevator_motor.setControl(posControl.withPosition(Degrees.of(0)));
+    right_elevator_motor.setControl(posControl.withPosition(Degrees.of(0)));
+    state=ElevatorState.STOWED;
+    }
 
     public double getHeightFt() {
         double rightPos = right_elevator_motor.getPosition().getValueAsDouble();
@@ -84,21 +93,32 @@ public class ElevatorSubsystem extends AbstractSubsystem {
 
 
     public void moveDownwardContinuously() {
-        if (isContinous) {
+        if (isContinuous) {
             left_elevator_motor.setControl(new DutyCycleOut(-0.5));
             right_elevator_motor.setControl(new DutyCycleOut(-0.5));
         }
     }
 
     public void moveUpwardContinuously() {
-        if (isContinous) {
+        if (isContinuous) {
             left_elevator_motor.setControl(new DutyCycleOut(0.5));
             right_elevator_motor.setControl(new DutyCycleOut(0.5));
         }
     }
 
     public void toggleMode() {
-        isContinous = !isContinous;
+        isContinuous = !isContinuous;
     } // the boolean will get reversed
 
+    public void setZeroingVoltage() {
+        left_elevator_motor.setVoltage(ZEROING_VOLTAGE);
+        right_elevator_motor.setVoltage(ZEROING_VOLTAGE);
+    }
+    public void zeroPosition() {
+        left_elevator_motor.setPosition(ZERO_POSITION);
+        right_elevator_motor.setPosition(ZERO_POSITION);
+    }
+    enum ElevatorState {
+        STOWED
+    }
 }
