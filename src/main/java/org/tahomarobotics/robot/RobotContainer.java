@@ -27,11 +27,13 @@ package org.tahomarobotics.robot;
 public class RobotContainer implements AutoCloseable {
 
     public final OI oi;
-
+    private final Elevator elevator;
 
     public RobotContainer() {
         oi = new OI(this);
+        this.elevator = new Elevator(ElevatorSubsystem.getInstance());
     }
+
 
     @Override
     public void close() {

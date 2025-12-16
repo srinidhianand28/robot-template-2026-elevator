@@ -28,15 +28,20 @@ import edu.wpi.first.wpilibj2.command.Command;
 
   public class Elevator {
 
-      public class Elevator {
-          private final ElevatorSubsystem elevator;
+      private final ElevatorSubsystem elevator;
 
-          public Elevator(ElevatorSubsystem elevator) {
-              this(new ElevatorSubsystem());
-          }
+      Elevator(ElevatorSubsystem elevator) {
+          this.elevator = elevator;
+      }
 
 
-          public Command goDown() {
+
+      public Elevator() {
+          this(new ElevatorSubsystem());
+      }
+
+
+      public Command goDown() {
               return elevator.runOnce(elevator::moveDownwardContinuously);
           }
 
@@ -49,4 +54,3 @@ import edu.wpi.first.wpilibj2.command.Command;
           }
 
       }
-  }
