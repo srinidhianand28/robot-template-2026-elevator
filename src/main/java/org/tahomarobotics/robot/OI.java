@@ -56,6 +56,11 @@ public class OI {
 
 
     public void configureControllerBindings() {
+    controller.y().onTrue(elevator.goUp());
+    controller.a().onTrue(elevator.goDown());
+    controller.b().onTrue(elevator.toggle());
+    controller.b().whileTrue(elevator.toggle());
+    // make trigger for continuous and discrete
     }
 
 

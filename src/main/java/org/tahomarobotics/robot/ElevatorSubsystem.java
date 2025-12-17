@@ -24,6 +24,7 @@ package org.tahomarobotics.robot;
 
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 
@@ -46,6 +47,9 @@ public class ElevatorSubsystem extends AbstractSubsystem {
 
     ElevatorState state=ElevatorState.STOWED;
     PositionVoltage posControl=new PositionVoltage(0);
+    VelocityDutyCycle velControl = new VelocityDutyCycle(1);
+
+
     @Override
     public void subsystemPeriodic() {
         Logger.recordOutput("ClimberState", state);
@@ -56,15 +60,15 @@ public class ElevatorSubsystem extends AbstractSubsystem {
 
     public void elevatorUp() {
         if (getHeightFt()>9) {
-            left_elevator_motor.setControl(new DutyCycleOut(0.5));
-            right_elevator_motor.setControl(new DutyCycleOut(0.5));
+            left_elevator_motor.setControl(velControl.withVelocity(0.5));
+            right_elevator_motor.setControl(velControl.withVelocity(0.5));
         }
     }
 
     public void ElevatorDown() {
         if (getHeightFt() < 1) {
-            left_elevator_motor.setControl(new DutyCycleOut(-0.5));
-            right_elevator_motor.setControl(new DutyCycleOut(-0.5));
+            left_elevator_motor.setControl(velControl.withVelocity(-0.5));
+            right_elevator_motor.setControl(velControl.withVelocity(-0.5));
         }
     }
 
@@ -80,7 +84,7 @@ public class ElevatorSubsystem extends AbstractSubsystem {
     public void transitionToStowed() {
     left_elevator_motor.setControl(posControl.withPosition(Degrees.of(0)));
     right_elevator_motor.setControl(posControl.withPosition(Degrees.of(0)));
-    state=ElevatorState.STOWED;
+    state = ElevatorState.STOWED;
     }
 
     public double getHeightFt() {
@@ -94,15 +98,15 @@ public class ElevatorSubsystem extends AbstractSubsystem {
 
     public void moveDownwardContinuously() {
         if (isContinuous) {
-            left_elevator_motor.setControl(new DutyCycleOut(-0.5));
-            right_elevator_motor.setControl(new DutyCycleOut(-0.5));
+            left_elevator_motor.setControl(velControl.withVelocity(-0.5));
+            right_elevator_motor.setControl(velControl.withVelocity(-0.5));
         }
     }
 
     public void moveUpwardContinuously() {
         if (isContinuous) {
-            left_elevator_motor.setControl(new DutyCycleOut(0.5));
-            right_elevator_motor.setControl(new DutyCycleOut(0.5));
+            left_elevator_motor.setControl(velControl.withVelocity(0.5));
+            right_elevator_motor.setControl(velControl.withVelocity(0.5));
         }
     }
 
@@ -118,7 +122,13 @@ public class ElevatorSubsystem extends AbstractSubsystem {
         left_elevator_motor.setPosition(ZERO_POSITION);
         right_elevator_motor.setPosition(ZERO_POSITION);
     }
+
+    public void stop() {
+        left_elevator_motor.stopMotor();
+        right_elevator_motor.stopMotor();
+    }
     enum ElevatorState {
         STOWED
     }
 }
+

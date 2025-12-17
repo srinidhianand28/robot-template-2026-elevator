@@ -28,12 +28,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 
   public class Elevator {
 
-      private final ElevatorSubsystem elevator;
+       private final ElevatorSubsystem elevator;
 
       Elevator(ElevatorSubsystem elevator) {
           this.elevator = elevator;
       }
-
 
 
       public Elevator() {
