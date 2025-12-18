@@ -24,6 +24,9 @@
 
 package org.tahomarobotics.robot;
 
+import org.tahomarobotics.robot.util.Elevator;
+import org.tahomarobotics.robot.util.ElevatorSubsystem;
+
 public class RobotContainer implements AutoCloseable {
 
     public final OI oi;

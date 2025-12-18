@@ -3,10 +3,13 @@ package org.tahomarobotics.robot;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.tahomarobotics.robot.util.Elevator;
+import org.tahomarobotics.robot.util.ElevatorSubsystem;
+
+import java.util.function.BooleanSupplier;
 
 
-public class OI{
+public class OI extends ElevatorSubsystem {
 
 
     // -- Constants --
@@ -37,10 +40,12 @@ public class OI{
 
 
     public void configureControllerBindings() {
-    controller.y().onTrue(elevator.goUp());
-    controller.a().onTrue(elevator.goDown());
+
+        controller.y().and(continuousTrigger).onTrue(elevator.goUp());
+        controller.y().and(continuousTrigger.negate()).onTrue(elevator.upPosition());
+    controller.a().and(continuousTrigger).onTrue(elevator.goDown());
+    controller.a().and(continuousTrigger.negate()).onTrue(elevator.downPosition());
     controller.b().onTrue(elevator.toggle());
-    controller.b().whileTrue(elevator.toggle());
     // make trigger for continuous and discrete
     }
 

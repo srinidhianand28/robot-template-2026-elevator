@@ -20,36 +20,41 @@
  * THE SOFTWARE.
  */
 
-package org.tahomarobotics.robot;
+package org.tahomarobotics.robot.util;
 
 import edu.wpi.first.wpilibj2.command.Command;
 
 
+public class Elevator {
 
-  public class Elevator {
+    private final ElevatorSubsystem elevator;
 
-       private final ElevatorSubsystem elevator;
-
-      Elevator(ElevatorSubsystem elevator) {
-          this.elevator = elevator;
-      }
-
-
-      public Elevator() {
-          this(new ElevatorSubsystem());
-      }
+    public Elevator(ElevatorSubsystem elevator) {
+        this.elevator = elevator;
+    }
 
 
-      public Command goDown() {
-              return elevator.runOnce(elevator::moveDownwardContinuously);
-          }
+    public Elevator() {
+        this(new ElevatorSubsystem());
+    }
 
-          public Command goUp() {
-              return elevator.runOnce(elevator::moveUpwardContinuously);
-          }
 
-          public Command toggle() {
-              return elevator.runOnce(elevator::toggleMode);
-          }
+    public Command goDown() {
+        return elevator.runOnce(elevator::moveDownwardContinuously);
+    }
 
-      }
+    public Command goUp() {
+        return elevator.runOnce(elevator::moveUpwardContinuously);
+    }
+
+    public Command toggle() {
+        return elevator.runOnce(elevator::toggleMode);
+    }
+
+    public Command upPosition() { return elevator.runOnce(elevator::elevatorUp); }
+
+    public Command downPosition() { return elevator.runOnce(elevator::ElevatorDown); }
+
+}
+
+

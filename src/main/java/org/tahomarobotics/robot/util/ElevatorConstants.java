@@ -34,4 +34,6 @@ public class ElevatorConstants {
     public final static int ZEROING_VOLTAGE=0;
     public final static int ZERO_TIME=15;
     public final static int ZERO_POSITION=0;
+    public final static int UP_POSITION = 9;
+    public final static int DOWN_POSITION = 1;
 }

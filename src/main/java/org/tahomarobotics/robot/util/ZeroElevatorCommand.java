@@ -24,7 +24,6 @@ package org.tahomarobotics.robot.util;
 
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import org.tahomarobotics.robot.ElevatorSubsystem;
 
 import static org.tahomarobotics.robot.util.ElevatorConstants.ZERO_TIME;
 
